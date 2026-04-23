@@ -23,6 +23,15 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: bump reqwest 0.11 → 0.12 + middleware 0.4`
+  - `Cargo.toml` workspace: `reqwest 0.11.14` → `reqwest 0.12` (default-features = false, features = rustls-tls/json/gzip/brotli/stream); `reqwest-middleware =0.2.2` → `0.4`; `reqwest-retry 0.2.2` → `0.7`; `http-cache-reqwest 0.6.0` → `0.15`; added `http = "1"` workspace dep; removed `task-local-extensions` workspace dep (no longer needed — reqwest-middleware 0.4 uses `http::Extensions` instead).
+  - `Cargo.toml` workspace: `sentry 0.31.0` switched to `default-features = false, features = ["backtrace", "contexts", "debug-images", "panic", "ureq", "rustls"]`. Sentry 0.31's `transport` feature hard-wires `native-tls`; using `ureq` + `rustls` instead gives a rustls-only transport.
+  - `Cargo.lock`: tokio bumped 1.32 → 1.52.1 (required by `tokio-stream 0.1.18` which was pulled transitively by `http-cache 0.20.1` → `cacache 13.1.0`); native-tls, hyper-tls, tokio-native-tls, task-local-extensions removed; reqwest 0.11 removed; reqwest 0.12.28 locked.
+  - `crates/oro-client/Cargo.toml`: removed `task-local-extensions` dep; added `http` workspace dep; simplified `reqwest` dep (features now in workspace def); bumped other deps via workspace.
+  - `crates/oro-client/src/auth_middleware.rs`: replaced `use task_local_extensions::Extensions` with `use http::Extensions` to match `reqwest-middleware 0.4` trait signature (the `Middleware::handle` signature is otherwise identical).
+  - `crates/oro-client/src/client.rs`: updated `http_cache_reqwest` import to add `HttpCacheOptions`; `options: None` → `options: HttpCacheOptions::default()` (API change in http-cache-reqwest 0.15); `CACacheManager { path: String }` → `CACacheManager { path: PathBuf }` (path field type changed in http-cache 0.20).
+  - **Result:** `cargo tree -p orogene | grep native-tls` returns nothing. Single reqwest version (0.12.28) in graph.
+
 - (2026-04-23) — `chore: remove dead syn workspace pin`
   - `Cargo.toml` workspace: removed `syn = "1.0.33"`. No crate in the orogene tree directly depends on `syn` — the pin was unused. Transitive `syn 2.x` is now pulled by `thiserror-impl` and `serde_derive` unambiguously.
 

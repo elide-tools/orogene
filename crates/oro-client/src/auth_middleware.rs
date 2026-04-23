@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use reqwest::{header::HeaderValue, Request, Response};
+use http::Extensions;
 use reqwest_middleware::{Middleware, Next, Result};
-use task_local_extensions::Extensions;
 use url::Url;
 
 use crate::credentials::Credentials;

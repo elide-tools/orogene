@@ -50,7 +50,7 @@ is-terminal = { workspace = true }
 kdl = { workspace = true }
 miette = { workspace = true, features = ["fancy"] }
 rand = { workspace = true, default_features = false }
-sentry = { workspace = true }
+sentry = { workspace = true, default-features = false }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 supports-unicode = { workspace = true }
@@ -103,7 +103,8 @@ indicatif = "0.18"
 io_tee = "0.1.1"
 is-terminal = "0.4.7"
 is_ci = "1.1.1"
-http-cache-reqwest = "0.6.0"
+http = "1"
+http-cache-reqwest = "0.15"
 humansize = "1.1.0"
 insta = "1.28.0"
 js-sys = "0.3.61"
@@ -126,18 +127,17 @@ quote = "1.0.7"
 rand = { version = "0.8.5", default-features = false }
 reflink-copy = "0.1.8"
 regex = "1.7.2"
-reqwest = { version = "0.11.14", default-features = false, features = ["rustls-tls"] }
-reqwest-middleware = "=0.2.2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "stream"] }
+reqwest-middleware = "0.4"
 resvg = "0.29.0"
 rkyv = "0.7.41"
-sentry = "0.31.0"
+sentry = { version = "0.31.0", default-features = false, features = ["backtrace", "contexts", "debug-images", "panic", "ureq", "rustls"] }
 serde = "1.0.152"
 serde_json = "1.0.93"
 serde-wasm-bindgen = "0.4.5"
 ssri = "9.0.0"
 supports-unicode = "2.0.0"
 tar = "0.4.38"
-task-local-extensions = "0.1.4"
 tempfile = "3.3.0"
 term_grid = "0.1.7"
 term_size = "0.3.2"
@@ -156,7 +156,7 @@ wasm-bindgen-futures = "0.4.34"
 wasm-streams = "0.3.0"
 which = "4.0.2"
 wiremock = "0.5.17"
-reqwest-retry = "0.2.2"
+reqwest-retry = "0.7"
 
 # [patch.crates-io]
 # cacache = { path = "../cacache-rs" }
