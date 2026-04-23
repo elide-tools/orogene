@@ -604,6 +604,7 @@ impl Orogene {
             .into_diagnostic()
     }
 
+    #[cfg(feature = "sentry")]
     fn setup_telemetry(
         &self,
         log_file: Option<PathBuf>,
@@ -683,6 +684,14 @@ impl Orogene {
         }
     }
 
+    /// No-op stub when the `sentry` feature is disabled. Returns `Ok(None)`
+    /// with `()` in place of `sentry::ClientInitGuard` so callers can keep
+    /// binding `let _telemetry_guard = ...` unchanged.
+    #[cfg(not(feature = "sentry"))]
+    fn setup_telemetry(&self, _log_file: Option<PathBuf>) -> Result<Option<()>> {
+        Ok(None)
+    }
+
     pub async fn load() -> Result<()> {
         Self::load_with_args(std::env::args_os().collect()).await
     }
@@ -747,6 +756,7 @@ impl Orogene {
                 tracing::debug!("{e:?}");
                 if let Some(log_file) = log_file.as_deref() {
                     tracing::warn!("A debug log was written to {}", log_file.display());
+                    #[cfg(feature = "sentry")]
                     sentry::configure_scope(|s| {
                         s.add_attachment(sentry::protocol::Attachment {
                             filename: log_file
@@ -759,8 +769,11 @@ impl Orogene {
                         });
                     });
                 }
-                let dyn_err: &dyn std::error::Error = e.as_ref();
-                sentry::capture_error(dyn_err);
+                #[cfg(feature = "sentry")]
+                {
+                    let dyn_err: &dyn std::error::Error = e.as_ref();
+                    sentry::capture_error(dyn_err);
+                }
                 e
             })?;
         tracing::debug!("Ran in {}s", start.elapsed().as_millis() as f32 / 1000.0);

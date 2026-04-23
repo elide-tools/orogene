@@ -23,6 +23,11 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `feat: gate sentry behind a cargo feature`
+  - `Cargo.toml`: added `[features]` section with `default = ["sentry"]` and `sentry = ["dep:sentry"]`. Made the `sentry` dep `optional = true`.
+  - `src/lib.rs`: `Orogene::setup_telemetry` is now feature-gated. A no-op stub (`#[cfg(not(feature = "sentry"))]`) returning `Ok(None)` replaces the real impl when the feature is off. The two remaining call sites (`sentry::configure_scope`/`sentry::capture_error` in the error-handling closure of `load`) are wrapped in `#[cfg(feature = "sentry")]`.
+  - Consumers that embed orogene via `default-features = false` no longer pull `sentry` into the dep graph at all. Standalone `cargo build -p orogene` preserves prior behavior (sentry on).
+
 - (2026-04-23) — `chore: drop sentry transport features (ureq/rustls)`
   - `Cargo.toml` workspace: `sentry` feature list reduced from `["backtrace", "contexts", "debug-images", "panic", "ureq", "rustls"]` to `["backtrace", "contexts", "debug-images", "panic"]`.
   - Reason: sentry 0.31's `ureq` transport requires `ureq::rustls` which hard-pins an older `rustls` version (0.21) that conflicts with the modern `rustls` (0.23) pulled by reqwest 0.12. Dropping the transport makes sentry a stub — panic handlers still install and crash data is still captured, but no events are emitted to a remote. This is acceptable for an embedded resolver whose crash reporting is the embedder's responsibility (Elide has its own telemetry layer).
