@@ -21,7 +21,13 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 ## Elide-applied patches
 
-None yet. Patches will be listed here as they are applied, in reverse chronological order.
+In reverse chronological order:
+
+- `93018b4` (2026-04-23) — `feat(embed): add load_with_args + current_command_from for in-process embedding`
+  - Adds `Orogene::load_with_args(argv: Vec<OsString>)` and the private helper `current_command_from(argv)` so embedders can invoke orogene with a caller-supplied argv instead of `std::env::args_os()`.
+  - `--help` / `--version` flow through `try_get_matches_from` and return `Ok(())` rather than calling `process::exit`, so the embedder stays in control of process lifecycle.
+  - Bumps workspace `indicatif` from `0.17.3` to `0.18` and relaxes `tracing-indicatif` to `"0.3"` so the version resolved inside the WHIPLASH workspace aligns with `tracing-indicatif 0.3.x` (which requires `indicatif 0.18`).
+  - Files: `Cargo.toml`, `src/lib.rs`.
 
 ## Sync procedure
 
