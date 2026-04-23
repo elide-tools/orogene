@@ -23,6 +23,10 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: drop sentry transport features (ureq/rustls)`
+  - `Cargo.toml` workspace: `sentry` feature list reduced from `["backtrace", "contexts", "debug-images", "panic", "ureq", "rustls"]` to `["backtrace", "contexts", "debug-images", "panic"]`.
+  - Reason: sentry 0.31's `ureq` transport requires `ureq::rustls` which hard-pins an older `rustls` version (0.21) that conflicts with the modern `rustls` (0.23) pulled by reqwest 0.12. Dropping the transport makes sentry a stub — panic handlers still install and crash data is still captured, but no events are emitted to a remote. This is acceptable for an embedded resolver whose crash reporting is the embedder's responsibility (Elide has its own telemetry layer).
+
 - (2026-04-23) — `chore: bump reqwest 0.11 → 0.12 + middleware 0.4`
   - `Cargo.toml` workspace: `reqwest 0.11.14` → `reqwest 0.12` (default-features = false, features = rustls-tls/json/gzip/brotli/stream); `reqwest-middleware =0.2.2` → `0.4`; `reqwest-retry 0.2.2` → `0.7`; `http-cache-reqwest 0.6.0` → `0.15`; added `http = "1"` workspace dep; removed `task-local-extensions` workspace dep (no longer needed — reqwest-middleware 0.4 uses `http::Extensions` instead).
   - `Cargo.toml` workspace: `sentry 0.31.0` switched to `default-features = false, features = ["backtrace", "contexts", "debug-images", "panic", "ureq", "rustls"]`. Sentry 0.31's `transport` feature hard-wires `native-tls`; using `ureq` + `rustls` instead gives a rustls-only transport.
