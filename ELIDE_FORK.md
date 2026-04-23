@@ -23,6 +23,11 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: bump thiserror 1 → 2`
+  - `Cargo.toml` workspace: `thiserror = "1.0.38"` → `thiserror = "2"` (resolves to 2.0.18).
+  - `Cargo.lock`: transitively bumped `time 0.3.29` → `0.3.47` (rustc 1.94 type-inference regression in `time 0.3.29`) and `wasm-bindgen 0.2.87` → `0.2.118` (incompatible with rustc 1.94); also bumped `serde 1.0.188` → `1.0.228` and `proc-macro2 1.0.68` → `1.0.106` as indirect consequences.
+  - `crates/nassun/src/error.rs`: two `#[error(...)]` format strings used a mixed positional-index + expression pattern (`{2}{}` with `if let Some(path) = .1`) that thiserror 2 rejects as ambiguous. Changed to `{_N}` / `_N` named binding style on `ExtractIoError` (line 53) and `ExtractCacheError` (line 64). No semantic change.
+
 - (2026-04-23) — `chore: bump rust-toolchain 1.72 → 1.94; switch reqwest to rustls-tls`
   - `rust-toolchain.toml`: channel `1.72.1` → `1.94.0`. The 1.72 pin blocked edition-2024 deps (notably `tracing-indicatif 0.3.13` which aligns on `indicatif 0.18`). 1.94 matches uv's pin and WHIPLASH's MSRV.
   - `Cargo.toml` workspace: `reqwest = "0.11.14"` → `reqwest = { version = "0.11.14", default-features = false, features = ["rustls-tls"] }`. Disables the default `default-tls` feature (which pulls `native-tls`/`hyper-tls`) at the workspace level.

@@ -50,7 +50,7 @@ pub enum NassunError {
 
     /// Failed to extract a tarball while doing a certain IO operation. Refer
     /// to the error message for more details.
-    #[error("Failed to extract tarball while {2}{}", if let Some(path) = .1 {
+    #[error("Failed to extract tarball while {_2}{}", if let Some(path) = _1 {
         format!(" (file: {})", path.to_string_lossy())
     } else {
         "".to_string()
@@ -61,7 +61,7 @@ pub enum NassunError {
     /// Failed to extract a tarball to the cache. Refer to the error message
     /// for more details.
     #[cfg(not(target_arch = "wasm32"))]
-    #[error("Failed to extract tarball to cache. {0}{}", if let Some(path) = .1 {
+    #[error("Failed to extract tarball to cache. {_0}{}", if let Some(path) = _1 {
         format!(" (file: {})", path.to_string_lossy())
     } else {
         "".to_string()
