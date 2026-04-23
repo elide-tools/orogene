@@ -23,6 +23,12 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: bump rust-toolchain 1.72 → 1.94; switch reqwest to rustls-tls`
+  - `rust-toolchain.toml`: channel `1.72.1` → `1.94.0`. The 1.72 pin blocked edition-2024 deps (notably `tracing-indicatif 0.3.13` which aligns on `indicatif 0.18`). 1.94 matches uv's pin and WHIPLASH's MSRV.
+  - `Cargo.toml` workspace: `reqwest = "0.11.14"` → `reqwest = { version = "0.11.14", default-features = false, features = ["rustls-tls"] }`. Disables the default `default-tls` feature (which pulls `native-tls`/`hyper-tls`) at the workspace level.
+  - `Cargo.lock`: `tracing-indicatif` updated to `0.3.13`, transitively aligning `indicatif` to `0.18.4` (eliminating the prior 0.17/0.18 split in the standalone lock).
+  - **Caveat:** `reqwest-middleware 0.2.2` (transitive via `http-cache-reqwest`) still enables reqwest's default features on its own dep line, so `native-tls` still appears in the resolved graph. True rustls-only convergence requires bumping `reqwest-middleware` to 0.4 and `reqwest` to 0.13. Tracked as follow-up.
+
 - `93018b4` (2026-04-23) — `feat(embed): add load_with_args + current_command_from for in-process embedding`
   - Adds `Orogene::load_with_args(argv: Vec<OsString>)` and the private helper `current_command_from(argv)` so embedders can invoke orogene with a caller-supplied argv instead of `std::env::args_os()`.
   - `--help` / `--version` flow through `try_get_matches_from` and return `Ok(())` rather than calling `process::exit`, so the embedder stays in control of process lifecycle.
