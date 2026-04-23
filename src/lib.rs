@@ -454,8 +454,14 @@ impl Orogene {
     }
 
     fn current_command() -> Command {
+        Self::current_command_from(&std::env::args_os().collect::<Vec<_>>())
+    }
+
+    fn current_command_from(argv: &[OsString]) -> Command {
         // First, we do a fake parse. All we really want is to get the subcommand, here.
-        let matches = Orogene::command().ignore_errors(true).get_matches();
+        let matches = Orogene::command()
+            .ignore_errors(true)
+            .get_matches_from(argv);
         let mut matches_ref = &matches;
 
         // Next, we "recursively" follow the subcommand chain until we bottom
@@ -678,6 +684,13 @@ impl Orogene {
     }
 
     pub async fn load() -> Result<()> {
+        Self::load_with_args(std::env::args_os().collect()).await
+    }
+
+    /// Like [`load`], but accepts an explicit argument vector instead of
+    /// reading from `std::env::args_os()`.  Useful when orogene is embedded
+    /// as a library and the caller controls the argv.
+    pub async fn load_with_args(argv: Vec<std::ffi::OsString>) -> Result<()> {
         let start = std::time::Instant::now();
         // We have to instantiate Orogene twice: once to pick up "base" config
         // options, like `root` and `config`, which affect our overall config
@@ -685,11 +698,22 @@ impl Orogene {
         // config file(s). The first instantiation also ignores errors,
         // because what we really need to apply the negations to is the
         // subcommand we're interested in.
-        let command = Self::current_command();
-        let matches = command.clone().get_matches();
+        let command = Self::current_command_from(&argv);
+        let matches = match command.clone().try_get_matches_from(&argv) {
+            Ok(m) => m,
+            Err(e) if e.use_stderr() => {
+                // Hard parse error — propagate.
+                return Err(miette::miette!("{e}"));
+            }
+            Err(e) => {
+                // Display-only (--help / --version). Print and return Ok.
+                let _ = e.print();
+                return Ok(());
+            }
+        };
         let oro = Orogene::from_arg_matches(&matches).into_diagnostic()?;
         let config = oro.build_config()?;
-        let mut args = std::env::args_os().collect::<Vec<_>>();
+        let mut args = argv;
         Self::layer_command_args(&command, &mut args, &config)?;
         let mut oro =
             Orogene::from_arg_matches(&command.get_matches_from(&args)).into_diagnostic()?;
