@@ -311,6 +311,18 @@ pub struct Orogene {
 }
 
 impl Orogene {
+    /// No-op stub when the `install-tracing-subscriber` feature is disabled.
+    ///
+    /// Tracing events continue to emit through the macros; the embedder is
+    /// expected to install its own global `tracing_subscriber` that receives
+    /// them. This form is used when orogene runs alongside other
+    /// tracing-emitting crates (uv, Elide) that must share a single subscriber.
+    #[cfg(not(feature = "install-tracing-subscriber"))]
+    fn setup_logging(&self, _log_file: Option<&Path>) -> Result<Option<WorkerGuard>> {
+        Ok(None)
+    }
+
+    #[cfg(feature = "install-tracing-subscriber")]
     fn setup_logging(&self, log_file: Option<&Path>) -> Result<Option<WorkerGuard>> {
         let builder = EnvFilter::builder();
         let filter = if self.quiet {

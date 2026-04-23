@@ -23,6 +23,10 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `feat: gate global tracing-subscriber install`
+  - `Cargo.toml`: added feature `install-tracing-subscriber` to `[features]`, default-on. No new deps.
+  - `src/lib.rs`: `Orogene::setup_logging` has two impls now — the real one gated by `#[cfg(feature = "install-tracing-subscriber")]`, and a stub that returns `Ok(None)` when the feature is off. The stub lets tracing events continue to emit through the macros without installing a global subscriber, so the embedder can own the subscriber and receive events alongside other emitters (uv, Elide, …).
+
 - (2026-04-23) — `feat: gate sentry behind a cargo feature`
   - `Cargo.toml`: added `[features]` section with `default = ["sentry"]` and `sentry = ["dep:sentry"]`. Made the `sentry` dep `optional = true`.
   - `src/lib.rs`: `Orogene::setup_telemetry` is now feature-gated. A no-op stub (`#[cfg(not(feature = "sentry"))]`) returning `Ok(None)` replaces the real impl when the feature is off. The two remaining call sites (`sentry::configure_scope`/`sentry::capture_error` in the error-handling closure of `load`) are wrapped in `#[cfg(feature = "sentry")]`.

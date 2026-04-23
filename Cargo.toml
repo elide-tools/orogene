@@ -20,13 +20,22 @@ upgrade-guid = "C5FC7FE8-A6AB-4897-8B26-01220D1C3FAD"
 path-guid = "D7A7057F-9CE2-4FB0-A0CF-1293469361C5"
 
 [features]
-default = ["sentry"]
+default = ["sentry", "install-tracing-subscriber"]
+
 # Crash-reporting via Sentry. Pulls `sentry` and installs panic/backtrace
 # integrations. When disabled, `Orogene::setup_telemetry` is a no-op stub
 # and sentry is not in the dep graph at all. Consumers that embed orogene
 # and provide their own crash/telemetry pipeline should build with
 # `default-features = false`.
 sentry = ["dep:sentry"]
+
+# Install a global `tracing_subscriber` during `Orogene::setup_logging`.
+# When disabled, `setup_logging` is a no-op stub — tracing events still
+# emit through the macros, but no subscriber is installed globally, so the
+# embedder's own subscriber receives them. This is required for concurrent
+# embedding alongside other tracing-emitting crates (uv, Elide, etc.) that
+# share a single process-wide subscriber.
+install-tracing-subscriber = []
 
 [dependencies]
 # Workspace Deps
