@@ -23,6 +23,9 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: remove dead syn workspace pin`
+  - `Cargo.toml` workspace: removed `syn = "1.0.33"`. No crate in the orogene tree directly depends on `syn` — the pin was unused. Transitive `syn 2.x` is now pulled by `thiserror-impl` and `serde_derive` unambiguously.
+
 - (2026-04-23) — `chore: bump thiserror 1 → 2`
   - `Cargo.toml` workspace: `thiserror = "1.0.38"` → `thiserror = "2"` (resolves to 2.0.18).
   - `Cargo.lock`: transitively bumped `time 0.3.29` → `0.3.47` (rustc 1.94 type-inference regression in `time 0.3.29`) and `wasm-bindgen 0.2.87` → `0.2.118` (incompatible with rustc 1.94); also bumped `serde 1.0.188` → `1.0.228` and `proc-macro2 1.0.68` → `1.0.106` as indirect consequences.
