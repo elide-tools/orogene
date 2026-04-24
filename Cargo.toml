@@ -155,7 +155,7 @@ regex = "1.7.2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "stream"] }
 reqwest-middleware = "0.4"
 resvg = "0.29.0"
-rkyv = "0.7.41"
+rkyv = "0.8"
 sentry = { version = "0.31.0", default-features = false, features = ["backtrace", "contexts", "debug-images", "panic"] }
 serde = "1.0.152"
 serde_json = "1.0.93"

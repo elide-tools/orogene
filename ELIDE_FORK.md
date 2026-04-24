@@ -23,6 +23,13 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore(nassun): bump rkyv 0.7.41 → 0.8`
+  - `Cargo.toml` workspace: `rkyv = "0.7.41"` → `rkyv = "0.8"` (resolves to 0.8.16). `bytecheck` is no longer a separate workspace dep — it is re-exported from rkyv 0.8 automatically.
+  - `crates/nassun/Cargo.toml`: removed `features = ["validation"]` from the rkyv dep. The `validation` feature was removed in rkyv 0.8; `bytecheck` integration is now on by default.
+  - `crates/nassun/src/tarball.rs`: removed `#[archive(check_bytes)]` attribute on `TarballIndex` (replaced by rkyv 0.8 default bytecheck integration). Updated serialization call: `rkyv::util::to_bytes::<_, 1024>` → `rkyv::to_bytes::<rkyv::rancor::Error>` (the const-size infallible allocator is gone; rkyv 0.8 uses a `rancor`-based error type).
+  - `crates/nassun/src/package.rs`: two `rkyv::check_archived_root::<TarballIndex>` calls replaced with `rkyv::access::<rkyv::Archived<TarballIndex>, rkyv::rancor::Error>` (the new validated-access API). Archived `HashMap<String, (String, u32)>` values now surface as `ArchivedTuple2<ArchivedString, u32_le>` instead of destructurable tuples; updated iteration patterns accordingly (`sri_mode.0` / `u32::from(sri_mode.1)` instead of `(sri, mode)` destructuring and `*mode`).
+  - `cargo check` and `cargo tree -p nassun | grep rkyv` confirm single rkyv 0.8.16 with no 0.7 remnants.
+
 - (2026-04-23) — `feat: gate dialoguer behind interactive feature`
   - Root `Cargo.toml`: added `interactive` feature (default-on) that activates `dep:dialoguer` and `oro-npm-account/interactive`. Marked `dialoguer` optional.
   - `crates/oro-npm-account/Cargo.toml`: added matching `interactive` feature (default-on), `dialoguer` optional.

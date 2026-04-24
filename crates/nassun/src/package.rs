@@ -272,7 +272,7 @@ impl Package {
         let name = self.name().to_owned();
         async_std::task::spawn_blocking(move || {
             let created = dashmap::DashSet::new();
-            let index = rkyv::check_archived_root::<TarballIndex>(
+            let index = rkyv::access::<rkyv::Archived<TarballIndex>, rkyv::rancor::Error>(
                 entry
                     .raw_metadata
                     .as_ref()
@@ -287,16 +287,16 @@ impl Package {
             } else {
                 extract_mode
             };
-            for (archived_path, (sri, mode)) in index.files.iter() {
-                let sri: Integrity = sri.parse()?;
+            for (archived_path, sri_mode) in index.files.iter() {
+                let sri: Integrity = sri_mode.0.parse()?;
                 let path = dir.join(&archived_path[..]);
                 let parent = PathBuf::from(path.parent().expect("this will always have a parent"));
                 crate::tarball::mkdirp(&parent, &created)?;
 
                 let mode = if index.bin_paths.contains(archived_path) {
-                    *mode | 0o111
+                    u32::from(sri_mode.1) | 0o111
                 } else {
-                    *mode
+                    u32::from(sri_mode.1)
                 };
 
                 crate::tarball::extract_from_cache(&cache, &sri, &path, extract_mode, mode)?;
@@ -321,15 +321,15 @@ impl fmt::Debug for Package {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn clean_from_cache(cache: &Path, sri: &Integrity, entry: cacache::Metadata) -> Result<()> {
-    let index = rkyv::check_archived_root::<TarballIndex>(
+    let index = rkyv::access::<rkyv::Archived<TarballIndex>, rkyv::rancor::Error>(
         entry
             .raw_metadata
             .as_ref()
             .ok_or_else(|| NassunError::CacheMissingIndexError("".into()))?,
     )
     .map_err(|e| NassunError::DeserializeCacheError(e.to_string()))?;
-    for (sri, _) in index.files.values() {
-        let sri: Integrity = sri.as_str().parse()?;
+    for sri_mode in index.files.values() {
+        let sri: Integrity = sri_mode.0.as_str().parse()?;
         match cacache::remove_hash_sync(cache, &sri) {
             Ok(_) => {}
             // We don't care if the file doesn't exist.

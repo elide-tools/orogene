@@ -377,7 +377,7 @@ impl TempTarball {
                     // This is just so the index entry is loadable.
                     .integrity("xxh3-deadbeef".parse().unwrap())
                     .raw_metadata(
-                        rkyv::util::to_bytes::<_, 1024>(&tarball_index)
+                        rkyv::to_bytes::<rkyv::rancor::Error>(&tarball_index)
                             .map_err(|e| NassunError::SerializeCacheError(format!("{e}")))?
                             .into_vec(),
                     ),
@@ -411,7 +411,6 @@ impl std::io::Seek for TempTarball {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(rkyv::Archive, rkyv::Serialize, Default)]
-#[archive(check_bytes)]
 pub(crate) struct TarballIndex {
     pub(crate) should_copy: bool,
     pub(crate) bin_paths: Vec<String>,
