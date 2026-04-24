@@ -23,6 +23,14 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `feat: gate npm-auth + diagnostics subcommands`
+  - `Cargo.toml`: added `npm-auth = ["dep:oro-npm-account"]` and `diagnostics = []` features, both default-on. Added both to `default = [...]`. Marked `oro-npm-account` as `optional = true`.
+  - `interactive` feature corrected to `"oro-npm-account?/interactive"` (the `?` makes sub-feature activation conditional on the optional dep being present, suppressing cargo warnings when `npm-auth` is off).
+  - `src/commands/mod.rs`: gated `pub mod login` / `pub mod logout` under `#[cfg(feature = "npm-auth")]`; gated `pub mod ping` under `#[cfg(feature = "diagnostics")]`.
+  - `src/lib.rs`: gated `OroCmd::Login` / `OroCmd::Logout` enum variants and dispatch arms under `#[cfg(feature = "npm-auth")]`; gated `OroCmd::Ping` and its dispatch arm under `#[cfg(feature = "diagnostics")]`.
+  - **Effect of `npm-auth` off:** `oro-npm-account` (and its `dialoguer`, `open`, and other transitives) drop entirely from the dep graph. Verified via `cargo tree -p orogene --no-default-features | grep oro-npm-account` → no output.
+  - All five build shapes verified clean: default, `--no-default-features`, `--no-default-features --features "sentry install-tracing-subscriber interactive"`, `--no-default-features --features npm-auth`, `--no-default-features --features diagnostics`.
+
 - (2026-04-23) — `chore: drop async-process, use tokio::process::Command`
   - `Cargo.toml` workspace: removed `async-process = "1.0.1"` entirely.
   - `crates/nassun/Cargo.toml`: removed `async-process = { workspace = true }` from the non-wasm target-deps block.

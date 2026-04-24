@@ -20,14 +20,25 @@ upgrade-guid = "C5FC7FE8-A6AB-4897-8B26-01220D1C3FAD"
 path-guid = "D7A7057F-9CE2-4FB0-A0CF-1293469361C5"
 
 [features]
-default = ["sentry", "install-tracing-subscriber", "interactive"]
+default = ["sentry", "install-tracing-subscriber", "interactive", "npm-auth", "diagnostics"]
 
 # Interactive CLI prompts (first-run telemetry opt-in, `oro login` credentials).
 # When disabled, `dialoguer` is not in the dep graph, the telemetry opt-in is
 # auto-declined (`Ok(false)`), and the legacy-auth login flow returns an
 # error. Embedders that never exercise interactive CLI paths (e.g. WHIPLASH
 # driving orogene programmatically) should build with `default-features = false`.
-interactive = ["dep:dialoguer", "oro-npm-account/interactive"]
+interactive = ["dep:dialoguer", "oro-npm-account?/interactive"]
+
+# npm authentication subcommands: `oro login` + `oro logout`.
+# When disabled, `oro-npm-account` is absent from the dep graph entirely,
+# dropping its `dialoguer`, `open`, and other transitives. Embedders that
+# only use orogene for package resolution (e.g. WHIPLASH) should build with
+# this off.
+npm-auth = ["dep:oro-npm-account"]
+
+# Diagnostics subcommand: `oro ping`.
+# Separate feature for clean scoping; no new deps.
+diagnostics = []
 
 # Crash-reporting via Sentry. Pulls `sentry` and installs panic/backtrace
 # integrations. When disabled, `Orogene::setup_telemetry` is a no-op stub
@@ -51,7 +62,7 @@ node-maintainer = { version = "=0.3.34", path = "./crates/node-maintainer" }
 oro-client = { version = "=0.3.34", path = "./crates/oro-client" }
 oro-common = { version = "=0.3.34", path = "./crates/oro-common" }
 oro-config = { version = "=0.3.34", path = "./crates/oro-config" }
-oro-npm-account = { version = "=0.3.34", path = "./crates/oro-npm-account" }
+oro-npm-account = { version = "=0.3.34", path = "./crates/oro-npm-account", optional = true }
 oro-package-spec = { version = "=0.3.34", path = "./crates/oro-package-spec" }
 oro-pretty-json = { version = "=0.3.34", path = "./crates/oro-pretty-json" }
 
