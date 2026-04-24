@@ -23,6 +23,12 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: drop async-process, use tokio::process::Command`
+  - `Cargo.toml` workspace: removed `async-process = "1.0.1"` entirely.
+  - `crates/nassun/Cargo.toml`: removed `async-process = { workspace = true }` from the non-wasm target-deps block.
+  - `crates/nassun/src/fetch/git.rs`: `use async_process::{Command, Stdio};` → `use std::process::Stdio; use tokio::process::Command;`. `tokio::process::Command` has the same fluent API as `async_process::Command` in the patterns orogene uses (`.arg()`, `.current_dir()`, `.stdin/stdout/stderr()`, `.status().await`, `.output().await`).
+  - **Result:** eliminates `async-process 1.x` from the graph and cascades-out `async-io 1/2`, `async-lock 2/3`, `event-listener 2/3/5`, `fastrand 1/2`, `futures-lite 1/2` — the final six async-std-adjacent ecosystem duplicates.
+
 - (2026-04-23) — `chore: target-gate tar impl to tokio-tar on native`
   - `Cargo.toml` workspace: added `tokio-tar = "0.3"` and `tokio-util = { version = "0.7", features = ["compat"] }` to `[workspace.dependencies]`.
   - `crates/nassun/Cargo.toml`: replaced `async-tar-wasm = "0.4.2-wasm.1"` in the `[target.'cfg(not(target_arch = "wasm32"))'.dependencies]` block with `tokio-tar = { workspace = true }` and `tokio-util = { workspace = true }`. The `[target.'cfg(target_arch = "wasm32")'.dependencies]` block retains `async-tar-wasm` unchanged. Added `tokio` feature to `async-compression` dep.

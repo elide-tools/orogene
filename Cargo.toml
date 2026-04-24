@@ -97,7 +97,6 @@ rust-version = "1.67.1"
 [workspace.dependencies]
 anyhow = "1.0.75"
 async-compression = "0.4"
-async-process = "1.0.1"
 async-trait = "0.1.64"
 backon = "0.4.0"
 base64 = "0.22"

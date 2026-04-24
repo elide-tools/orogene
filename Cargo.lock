@@ -2192,7 +2192,6 @@ name = "nassun"
 version = "0.3.34"
 dependencies = [
  "async-compression",
- "async-process",
  "async-tar-wasm",
  "async-trait",
  "backon",

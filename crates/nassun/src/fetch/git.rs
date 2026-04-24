@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use async_process::{Command, Stdio};
+use std::process::Stdio;
+use tokio::process::Command;
 use std::sync::Arc;
 use async_trait::async_trait;
 use node_semver::{Range, Version};
