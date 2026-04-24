@@ -490,32 +490,6 @@ checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 
 [[package]]
 name = "cacache"
-version = "12.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "142316461ed3a3dfcba10417317472da5bfd0461e4d276bf7c07b330766d9490"
-dependencies = [
- "async-std",
- "digest",
- "either",
- "futures 0.3.28",
- "hex",
- "libc",
- "memmap2",
- "miette 5.10.0",
- "reflink-copy",
- "serde",
- "serde_derive",
- "serde_json",
- "sha1",
- "sha2",
- "ssri",
- "tempfile",
- "thiserror 1.0.69",
- "walkdir",
-]
-
-[[package]]
-name = "cacache"
 version = "13.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c5063741c7b2e260bbede781cf4679632dd90e2718e99f7715e46824b65670b"
@@ -1449,7 +1423,7 @@ checksum = "7e883defacf53960c7717d9e928dc8667be9501d9f54e6a8b7703d7a30320e9c"
 dependencies = [
  "async-trait",
  "bincode",
- "cacache 13.1.0",
+ "cacache",
  "http 1.4.0",
  "http-cache-semantics",
  "httpdate",
@@ -2225,7 +2199,7 @@ dependencies = [
  "async-trait",
  "backon",
  "bincode",
- "cacache 12.0.0",
+ "cacache",
  "console_error_panic_hook",
  "dashmap",
  "flate2",

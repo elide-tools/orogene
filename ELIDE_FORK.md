@@ -23,6 +23,9 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: bump cacache 12 → 13 with tokio-runtime feature`
+  - `Cargo.toml` workspace: `cacache = "12.0.0"` → `cacache = { version = "13", default-features = false, features = ["tokio-runtime", "mmap"] }`. Crucially, cacache 13's default features are `["async-std", "mmap"]` — using the `tokio-runtime` feature instead keeps cacache aligned with orogene's recently-ported tokio stack and prevents async-std from being transitively re-introduced through cacache's write/read layer.
+
 - (2026-04-23) — `feat: port from async-std to tokio`
   - Removed `async-std = "1.12.0"` from workspace deps and all sub-crate `[dependencies]`/`[dev-dependencies]`. Added `tokio = { version = "1", features = [...] }` and `tokio-stream = { version = "0.1", features = ["fs"] }` to workspace deps.
   - Ported all first-party `async_std::*` call sites (24 files) to tokio equivalents: `async_std::fs::*` → `tokio::fs::*`; `async_std::task::spawn_blocking` → `tokio::task::spawn_blocking` (with `.await.unwrap()?` to unwrap `JoinError`); `async_std::task::sleep` → `tokio::time::sleep`; `async_std::sync::{Arc,Mutex}` → `std::sync::Arc` / `tokio::sync::Mutex`; `async_std::path::Path`/`PathBuf` → `std::path::{Path,PathBuf}` (sync `.exists()` replaces `.exists().await`); `#[async_std::main]` → `#[tokio::main]`; `#[async_std::test]` → `#[tokio::test]`.
