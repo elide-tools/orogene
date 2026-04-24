@@ -19,7 +19,7 @@ async-trait = { workspace = true }
 http = { workspace = true }
 chrono = { workspace = true }
 base64 = { workspace = true }
-futures = { workspace = true, features = ["io-compat"] }
+futures = { workspace = true }
 indexmap = { workspace = true }
 miette = { workspace = true }
 percent-encoding = { workspace = true }
