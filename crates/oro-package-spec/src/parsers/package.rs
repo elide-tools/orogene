@@ -4,6 +4,7 @@ use nom::combinator::opt;
 use nom::error::context;
 use nom::sequence::preceded;
 use nom::IResult;
+use nom::Parser;
 
 use crate::error::SpecParseError;
 use crate::parsers::{alias, git, npm, path};
@@ -19,5 +20,5 @@ pub(crate) fn package_spec(input: &str) -> IResult<&str, PackageSpec, SpecParseE
             git::git_spec,
             preceded(opt(tag("npm:")), npm::npm_spec),
         )),
-    )(input)
+    ).parse(input)
 }

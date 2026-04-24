@@ -23,6 +23,13 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: bump miette 5 → 7 + nom 7 → 8`
+  - `Cargo.toml` workspace: `miette = "5"` → `miette = "7"` (resolves to 7.6.0); `nom = "7"` → `nom = "8"` (resolves to 8.0.0); `kdl = "5.0.0-alpha.1"` → `kdl = "6"` (resolves to 6.5.0; kdl 6 uses miette 7, eliminating the miette version split between kdl and the rest of the codebase).
+  - **nom 8 migration** — In nom 8, combinators (`tuple`, `alt`, `map`, `map_res`, `opt`, `preceded`, `terminated`, `all_consuming`, `context`, `recognize`, etc.) return `impl Parser<I, …>` rather than a callable function. Every call-site of the form `combinator(args)(input)` was changed to `combinator(args).parse(input)`. `use nom::Parser;` added to every affected file. Additionally, `nom::sequence::tuple` is deprecated in nom 8 in favour of tuples implementing `Parser` directly; all `tuple((a, b, c))` call-sites were migrated to bare `(a, b, c)` (with corresponding import cleanup).
+  - **miette 7 migration** — `NamedSource` is now generic: `NamedSource` → `NamedSource<String>` in `crates/oro-client/src/error.rs`. No other miette API surface changes required in first-party code.
+  - **kdl 6 migration** — kdl 6 changed several APIs from kdl 5: `KdlValue::as_i64()` → `as_integer()` (returns `i128`); `KdlValue::as_f64()` → `as_float()`; `KdlValue: From<i64>` → `From<i128>` (push calls cast to `i128`); `KdlDocument::set_leading(str)` removed — replaced with `doc.set_format(KdlDocumentFormat { leading: …, trailing: … })`; `doc.fmt()` → `doc.autoformat()`; `doc.query("selector > path")` removed — replaced with manual `get` + `children` chaining. Affected files: `crates/oro-config/src/kdl_source.rs`, `crates/node-maintainer/src/lockfile.rs`, `src/lib.rs`.
+  - `nom v7` and `miette v5` remain in the transitive graph via `node-semver 2.x` (which depends on them directly). This is a third-party dep constraint, not a first-party issue.
+
 - (2026-04-23) — `chore(nassun): bump rkyv 0.7.41 → 0.8`
   - `Cargo.toml` workspace: `rkyv = "0.7.41"` → `rkyv = "0.8"` (resolves to 0.8.16). `bytecheck` is no longer a separate workspace dep — it is re-exported from rkyv 0.8 automatically.
   - `crates/nassun/Cargo.toml`: removed `features = ["validation"]` from the rkyv dep. The `validation` feature was removed in rkyv 0.8; `bytecheck` integration is now on by default.

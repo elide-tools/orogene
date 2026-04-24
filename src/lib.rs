@@ -543,7 +543,11 @@ impl Orogene {
                 let mut config: KdlDocument = std::fs::read_to_string(&config_path)
                     .unwrap_or_default()
                     .parse()?;
-                let telemetry_exists = config.query("options > telemetry")?.is_some();
+                let telemetry_exists = config
+                    .get("options")
+                    .and_then(|n| n.children())
+                    .and_then(|d| d.get("telemetry"))
+                    .is_some();
                 if config.get("options").is_none() {
                     config.nodes_mut().push(KdlNode::new("options"));
                 }
@@ -574,7 +578,12 @@ impl Orogene {
                         }
                     }
                 }
-                if config.query("options > first-time")?.is_none() {
+                if config
+                    .get("options")
+                    .and_then(|n| n.children())
+                    .and_then(|d| d.get("first-time"))
+                    .is_none()
+                {
                     let mut node = KdlNode::new("first-time");
                     node.push(KdlValue::Bool(false));
                     let opts = config.get_mut("options").unwrap();

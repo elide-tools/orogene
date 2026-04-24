@@ -4,6 +4,7 @@ use std::str::FromStr;
 use node_semver::Range;
 use nom::combinator::all_consuming;
 use nom::Err;
+use nom::Parser;
 use url::Url;
 
 use crate::error::{PackageSpecError, SpecErrorKind};
@@ -237,7 +238,7 @@ where
     I: AsRef<str>,
 {
     let input = input.as_ref();
-    match all_consuming(git::git_spec)(input) {
+    match all_consuming(git::git_spec).parse(input) {
         Ok((_, PackageSpec::Git(arg))) => Ok(arg),
         Ok(_) => unreachable!("This should only return git specs"),
         Err(err) => Err(match err {

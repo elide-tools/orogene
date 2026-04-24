@@ -6,8 +6,9 @@ use nom::character::complete::{anychar, one_of};
 use nom::combinator::{map, map_res, opt, recognize, rest};
 use nom::error::context;
 use nom::multi::{many0, many1};
-use nom::sequence::{delimited, preceded, tuple};
+use nom::sequence::{delimited, preceded};
 use nom::IResult;
+use nom::Parser;
 
 use crate::error::{SpecErrorKind, SpecParseError};
 use crate::PackageSpec;
@@ -19,7 +20,7 @@ pub(crate) fn path_spec(input: &str) -> IResult<&str, PackageSpec, SpecParseErro
         map(alt((relative_path, absolute_path)), |p| PackageSpec::Dir {
             path: p,
         }),
-    )(input)
+    ).parse(input)
 }
 
 /// relative-path := [ '.' ] '.' [path-sep] .*
@@ -27,10 +28,10 @@ fn relative_path(input: &str) -> IResult<&str, PathBuf, SpecParseError<&str>> {
     context(
         "relative path",
         map(
-            recognize(tuple((tag("."), opt(tag(".")), many0(path_sep), rest))),
+            recognize((tag("."), opt(tag(".")), many0(path_sep), rest)),
             PathBuf::from,
         ),
-    )(input)
+    ).parse(input)
 }
 
 /// absolute-path := [ alpha ':' ] path-sep+ [ '?' path-sep+ ] .*
@@ -61,7 +62,7 @@ fn absolute_path(input: &str) -> IResult<&str, PathBuf, SpecParseError<&str>> {
             )),
             PathBuf::from,
         ),
-    )(input)
+    ).parse(input)
 }
 
 /// path-sep := ( '/' | '\' )

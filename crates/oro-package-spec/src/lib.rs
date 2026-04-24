@@ -8,6 +8,7 @@ use std::str::FromStr;
 use node_semver::{Range, Version};
 use nom::combinator::all_consuming;
 use nom::Err;
+use nom::Parser;
 
 pub use crate::error::{PackageSpecError, SpecErrorKind};
 pub use crate::gitinfo::{GitHost, GitInfo};
@@ -155,7 +156,7 @@ where
     I: AsRef<str>,
 {
     let input = input.as_ref();
-    match all_consuming(package::package_spec)(input) {
+    match all_consuming(package::package_spec).parse(input) {
         Ok((_, arg)) => Ok(arg),
         Err(err) => Err(match err {
             Err::Error(e) | Err::Failure(e) => PackageSpecError {
