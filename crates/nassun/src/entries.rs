@@ -1,28 +1,56 @@
 use std::{borrow::Cow, pin::Pin, task::Poll};
 
+#[cfg(not(target_arch = "wasm32"))]
+use async_compression::tokio::bufread::GzipDecoder;
+#[cfg(target_arch = "wasm32")]
 use async_compression::futures::bufread::GzipDecoder;
-use futures::io::BufReader;
-use std::path::Path;
-use async_tar_wasm::{Archive, Entry as TarEntry};
-use futures::{AsyncRead, Stream};
 
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::io::BufReader;
+#[cfg(target_arch = "wasm32")]
+use futures::io::BufReader;
+
+use std::path::Path;
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio_tar::{Archive, Entry as TarEntry};
+#[cfg(target_arch = "wasm32")]
+use async_tar_wasm::{Archive, Entry as TarEntry};
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio_util::compat::FuturesAsyncReadCompatExt;
+
+#[cfg(target_arch = "wasm32")]
+use futures::{AsyncRead, Stream};
+#[cfg(not(target_arch = "wasm32"))]
+use futures::Stream;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use tokio_tar::Header;
+#[cfg(target_arch = "wasm32")]
 pub use async_tar_wasm::Header;
 
 use crate::error::{IoContext, Result};
 use crate::tarball::Tarball;
 
 #[cfg(not(target_arch = "wasm32"))]
+type InnerReader = GzipDecoder<BufReader<tokio_util::compat::Compat<futures::io::BufReader<Tarball>>>>;
+#[cfg(target_arch = "wasm32")]
+type InnerReader = GzipDecoder<BufReader<Tarball>>;
+
+#[cfg(not(target_arch = "wasm32"))]
 type EntriesStream = Box<dyn Stream<Item = Result<Entry>> + Unpin + Send + Sync>;
 #[cfg(target_arch = "wasm32")]
 type EntriesStream = Box<dyn Stream<Item = Result<Entry>> + Unpin>;
+
 /// Stream of tarball entries.
 pub struct Entries(
-    pub(crate) Archive<GzipDecoder<BufReader<Tarball>>>,
+    pub(crate) Archive<InnerReader>,
     pub(crate) EntriesStream,
 );
 
 impl Entries {
-    pub fn into_inner(self) -> Archive<GzipDecoder<BufReader<Tarball>>> {
+    pub fn into_inner(self) -> Archive<InnerReader> {
         self.0
     }
 }
@@ -39,7 +67,7 @@ impl Stream for Entries {
 }
 
 /// Entry in a package tarball.
-pub struct Entry(pub(crate) TarEntry<Archive<GzipDecoder<BufReader<Tarball>>>>);
+pub struct Entry(pub(crate) TarEntry<Archive<InnerReader>>);
 
 impl Entry {
     /// Returns access to the header of this entry in the archive.
@@ -62,15 +90,25 @@ impl Entry {
     /// It is recommended to use this method instead of inspecting the header
     /// directly to ensure that various archive formats are handled correctly.
     pub fn path(&self) -> Result<Cow<'_, Path>> {
-        self.0
-            .path()
-            .io_context(|| "Failed to read path from tarball entry".into())
-            .map(|cow| match cow {
-                // async_std::path::Path is a transparent newtype over std::path::Path;
-                // convert via OsStr to avoid a direct dep on async_std.
-                Cow::Borrowed(p) => Cow::Borrowed(std::path::Path::new(p.as_os_str())),
-                Cow::Owned(p) => Cow::Owned(std::path::PathBuf::from(p.as_os_str())),
-            })
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            // tokio_tar::Entry::path() returns std::path::Path directly.
+            self.0
+                .path()
+                .io_context(|| "Failed to read path from tarball entry".into())
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.0
+                .path()
+                .io_context(|| "Failed to read path from tarball entry".into())
+                .map(|cow| match cow {
+                    // async_std::path::Path is a transparent newtype over std::path::Path;
+                    // convert via OsStr to avoid a direct dep on async_std.
+                    Cow::Borrowed(p) => Cow::Borrowed(std::path::Path::new(p.as_os_str())),
+                    Cow::Owned(p) => Cow::Owned(std::path::PathBuf::from(p.as_os_str())),
+                })
+        }
     }
 
     /// Writes this file to the specified location.
@@ -101,7 +139,7 @@ impl Entry {
     /// dst will be overwritten.
     ///
     /// This function carefully avoids writing outside of dst. If the file has
-    /// a ‘..’ in its path, this function will skip it and return false.
+    /// a '..' in its path, this function will skip it and return false.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn unpack_in(&mut self, dst: impl AsRef<Path>) -> Result<()> {
         let dst = dst.as_ref();
@@ -113,6 +151,7 @@ impl Entry {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl AsyncRead for Entry {
     fn poll_read(
         mut self: std::pin::Pin<&mut Self>,
@@ -121,4 +160,38 @@ impl AsyncRead for Entry {
     ) -> std::task::Poll<std::io::Result<usize>> {
         Pin::new(&mut self.0).poll_read(cx, buf)
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl tokio::io::AsyncRead for Entry {
+    fn poll_read(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        Pin::new(&mut self.0).poll_read(cx, buf)
+    }
+}
+
+/// Build a native-side archive from a Tarball using tokio-tar.
+///
+/// Bridges the futures::AsyncRead Tarball through tokio_util::compat into a
+/// tokio::io::AsyncRead, wraps it in tokio::io::BufReader, feeds that through
+/// the tokio-flavoured GzipDecoder, and hands it to tokio_tar::Archive.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn make_archive(tarball: Tarball) -> Archive<InnerReader> {
+    use futures::io::BufReader as FuturesBufReader;
+    let futures_buf = FuturesBufReader::new(tarball);
+    let compat = futures_buf.compat();
+    let tokio_buf = BufReader::new(compat);
+    let decoder = GzipDecoder::new(tokio_buf);
+    Archive::new(decoder)
+}
+
+/// Build a wasm-side archive from a Tarball using async-tar-wasm.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn make_archive(tarball: Tarball) -> Archive<InnerReader> {
+    use futures::io::BufReader;
+    let decoder = GzipDecoder::new(BufReader::new(tarball));
+    Archive::new(decoder)
 }

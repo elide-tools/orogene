@@ -23,6 +23,13 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `chore: target-gate tar impl to tokio-tar on native`
+  - `Cargo.toml` workspace: added `tokio-tar = "0.3"` and `tokio-util = { version = "0.7", features = ["compat"] }` to `[workspace.dependencies]`.
+  - `crates/nassun/Cargo.toml`: replaced `async-tar-wasm = "0.4.2-wasm.1"` in the `[target.'cfg(not(target_arch = "wasm32"))'.dependencies]` block with `tokio-tar = { workspace = true }` and `tokio-util = { workspace = true }`. The `[target.'cfg(target_arch = "wasm32")'.dependencies]` block retains `async-tar-wasm` unchanged. Added `tokio` feature to `async-compression` dep.
+  - `crates/nassun/src/entries.rs`: cfg-gated all archive/entry types. On native: uses `tokio_tar::{Archive, Entry, Header}` + `async_compression::tokio::bufread::GzipDecoder` + `tokio::io::BufReader`; bridges `futures::io::BufReader<Tarball>` through `tokio_util::compat::FuturesAsyncReadCompatExt` at the `Archive::new()` boundary. On wasm: retains `async_tar_wasm::{Archive, Entry, Header}` + `async_compression::futures::bufread::GzipDecoder`. `Entry::path()` on native returns `std::path::Path` directly (no `.as_os_str()` bridge needed); wasm path retains the bridge. `AsyncRead` impl on native becomes `tokio::io::AsyncRead`. New `pub(crate) fn make_archive(tarball)` factory hides the platform split from `tarball.rs`.
+  - `crates/nassun/src/tarball.rs`: removed bare `async_tar_wasm::Archive` and `GzipDecoder` imports; `entries()` now calls `crate::entries::make_archive(self)` instead of building the archive inline.
+  - **Result:** `cargo tree -p nassun -i async-std` prints nothing. `async-std` is fully absent from the native dep graph.
+
 - (2026-04-23) — `chore: bump cacache 12 → 13 with tokio-runtime feature`
   - `Cargo.toml` workspace: `cacache = "12.0.0"` → `cacache = { version = "13", default-features = false, features = ["tokio-runtime", "mmap"] }`. Crucially, cacache 13's default features are `["async-std", "mmap"]` — using the `tokio-runtime` feature instead keeps cacache aligned with orogene's recently-ported tokio stack and prevents async-std from being transitively re-introduced through cacache's write/read layer.
 

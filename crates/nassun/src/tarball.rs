@@ -11,9 +11,6 @@ use std::task::{Context, Poll};
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 
-use async_compression::futures::bufread::GzipDecoder;
-use futures::io::BufReader;
-use async_tar_wasm::Archive;
 #[cfg(not(target_arch = "wasm32"))]
 use backon::{BlockingRetryable, ConstantBuilder};
 #[cfg(not(target_arch = "wasm32"))]
@@ -21,6 +18,8 @@ use cacache::WriteOpts;
 #[cfg(not(target_arch = "wasm32"))]
 use futures::AsyncReadExt;
 use futures::{AsyncRead, StreamExt};
+#[cfg(not(target_arch = "wasm32"))]
+use futures::io::BufReader;
 #[cfg(not(target_arch = "wasm32"))]
 use oro_common::BuildManifest;
 #[cfg(not(target_arch = "wasm32"))]
@@ -141,8 +140,7 @@ impl Tarball {
 
     /// A `Stream` of extracted entries from this tarball.
     pub(crate) fn entries(self) -> Result<Entries> {
-        let decoder = GzipDecoder::new(BufReader::new(self));
-        let ar = Archive::new(decoder);
+        let mut ar = crate::entries::make_archive(self);
         Ok(Entries(
             ar.clone(),
             Box::new(
