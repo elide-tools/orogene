@@ -23,6 +23,14 @@ Upstream `main` can still be fetched for reference; do not merge it.
 
 In reverse chronological order:
 
+- (2026-04-23) — `feat: gate dialoguer behind interactive feature`
+  - Root `Cargo.toml`: added `interactive` feature (default-on) that activates `dep:dialoguer` and `oro-npm-account/interactive`. Marked `dialoguer` optional.
+  - `crates/oro-npm-account/Cargo.toml`: added matching `interactive` feature (default-on), `dialoguer` optional.
+  - `src/lib.rs`: `prompt_telemetry_opt_in` now has two impls — real one gated by `#[cfg(feature = "interactive")]`, stub returning `Ok(false)` (auto-decline) when off. Dialoguer imports cfg-gated.
+  - `crates/oro-npm-account/src/login.rs`: Legacy auth flow (username/password prompts) returns `OroNpmAccountError::InteractiveFeatureDisabled` when the feature is off; Web auth flow remains fully functional.
+  - `crates/oro-npm-account/src/error.rs`: added `InteractiveFeatureDisabled` variant.
+  - Drops `dialoguer` from the dep graph when `--no-default-features` is used (as WHIPLASH does).
+
 - (2026-04-23) — `fix(nassun): target-gate tsify to wasm32 only`
   - `crates/nassun/Cargo.toml`: moved `tsify` from the unconditional `[dependencies]` section to the `[target.'cfg(target_arch = "wasm32")'.dependencies]` block alongside its `wasm-bindgen` family siblings. The only usage of `tsify::Tsify` is in `crates/nassun/src/wasm.rs`, which is already `#[cfg(target_arch = "wasm32")]`-gated from `lib.rs`. The dep was pulled into every target build purely as an oversight.
   - Drops `tsify`, `wasm-bindgen`, `serde-wasm-bindgen`, `js-sys`, `wasm-streams`, and `console_error_panic_hook` from the non-wasm build graph (was 5+ crates). No cargo feature needed — just correct target gating.

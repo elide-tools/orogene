@@ -1,5 +1,7 @@
 use crate::error::OroNpmAccountError;
+#[cfg(feature = "interactive")]
 use dialoguer::theme::ColorfulTheme;
+#[cfg(feature = "interactive")]
 use dialoguer::{Input, Password};
 use open::that as open;
 use oro_client::login::{AuthType, DoneURLResponse, LoginCouchResponse, LoginOptions, Token};
@@ -32,6 +34,14 @@ pub async fn login(
             }
         }
         AuthType::Legacy => {
+            #[cfg(not(feature = "interactive"))]
+            {
+                let _ = options;
+                let _ = client;
+                return Err(OroNpmAccountError::InteractiveFeatureDisabled);
+            }
+            #[cfg(feature = "interactive")]
+            {
             let username: String = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Username:")
                 .interact()
@@ -72,6 +82,7 @@ pub async fn login(
                     }
                 }
                 LoginCouchResponse::Token(token) => Ok(Token { token }),
+            }
             }
         }
     }

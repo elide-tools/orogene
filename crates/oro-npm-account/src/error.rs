@@ -32,4 +32,9 @@ pub enum OroNpmAccountError {
     #[error("Received unexpected response.")]
     #[diagnostic(code(oro_npm_account::unexpected_response_error), url(docsrs))]
     UnexpectedResponseError,
+
+    /// Legacy (username/password) auth requires the `interactive` feature.
+    #[error("Legacy auth requires the `interactive` feature; use Web auth or rebuild with `--features interactive`.")]
+    #[diagnostic(code(oro_npm_account::interactive_feature_disabled), url(docsrs))]
+    InteractiveFeatureDisabled,
 }

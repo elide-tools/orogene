@@ -11,12 +11,18 @@ repository.workspace = true
 homepage.workspace = true
 rust-version.workspace = true
 
+[features]
+default = ["interactive"]
+# Interactive `oro login` prompts (username/password via dialoguer). Disable
+# for embedded/non-interactive use; the Web auth flow does not require this.
+interactive = ["dep:dialoguer"]
+
 [dependencies]
 oro-client = { version = "=0.3.34", path = "../oro-client" }
 
 async-std = { workspace = true }
 base64 = { workspace = true }
-dialoguer = { workspace = true, features = ["password"] }
+dialoguer = { workspace = true, features = ["password"], optional = true }
 kdl = { workspace = true }
 miette = { workspace = true }
 open = { workspace = true }

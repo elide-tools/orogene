@@ -97,6 +97,7 @@ use std::{
 
 use async_trait::async_trait;
 use clap::{Args, Command, CommandFactory, FromArgMatches as _, Parser, Subcommand};
+#[cfg(feature = "interactive")]
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use directories::ProjectDirs;
 use is_terminal::IsTerminal;
@@ -602,6 +603,7 @@ impl Orogene {
         Ok(())
     }
 
+    #[cfg(feature = "interactive")]
     fn prompt_telemetry_opt_in(&self) -> Result<bool> {
         tracing::info!("Orogene is able to collect anonymous usage statistics and");
         tracing::info!("crash reports to help the team improve the tool.");
@@ -614,6 +616,13 @@ impl Orogene {
             .with_prompt("Do you wish to enable anonymous telemetry?")
             .interact()
             .into_diagnostic()
+    }
+
+    /// Non-interactive fallback: auto-decline telemetry when the `interactive`
+    /// feature is off (no dialoguer in the build).
+    #[cfg(not(feature = "interactive"))]
+    fn prompt_telemetry_opt_in(&self) -> Result<bool> {
+        Ok(false)
     }
 
     #[cfg(feature = "sentry")]

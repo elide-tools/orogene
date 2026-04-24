@@ -20,7 +20,14 @@ upgrade-guid = "C5FC7FE8-A6AB-4897-8B26-01220D1C3FAD"
 path-guid = "D7A7057F-9CE2-4FB0-A0CF-1293469361C5"
 
 [features]
-default = ["sentry", "install-tracing-subscriber"]
+default = ["sentry", "install-tracing-subscriber", "interactive"]
+
+# Interactive CLI prompts (first-run telemetry opt-in, `oro login` credentials).
+# When disabled, `dialoguer` is not in the dep graph, the telemetry opt-in is
+# auto-declined (`Ok(false)`), and the legacy-auth login flow returns an
+# error. Embedders that never exercise interactive CLI paths (e.g. WHIPLASH
+# driving orogene programmatically) should build with `default-features = false`.
+interactive = ["dep:dialoguer", "oro-npm-account/interactive"]
 
 # Crash-reporting via Sentry. Pulls `sentry` and installs panic/backtrace
 # integrations. When disabled, `Orogene::setup_telemetry` is a no-op stub
@@ -59,7 +66,7 @@ chrono = { workspace = true }
 chrono-humanize = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 colored = { workspace = true }
-dialoguer = { workspace = true, default-features = false }
+dialoguer = { workspace = true, default-features = false, optional = true }
 directories = { workspace = true }
 humansize = { workspace = true }
 indicatif = { workspace = true }
