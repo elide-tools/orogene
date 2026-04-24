@@ -42,7 +42,7 @@ impl OroCommand for ReapplyCmd {
         }
 
         let corgi: CorgiManifest = serde_json::from_str(
-            &async_std::fs::read_to_string(self.apply.root.join("package.json"))
+            &tokio::fs::read_to_string(self.apply.root.join("package.json"))
                 .await
                 .into_diagnostic()?,
         )

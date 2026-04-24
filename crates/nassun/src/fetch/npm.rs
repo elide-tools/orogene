@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use async_std::sync::Arc;
+use std::sync::Arc;
 use async_trait::async_trait;
 use dashmap::DashMap;
 use oro_client::{self, OroClient};
@@ -167,7 +167,7 @@ mod test {
 
     use super::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_name() -> miette::Result<()> {
         let fetcher = NpmFetcher::new(oro_client::OroClient::default(), HashMap::default(), false);
         let spec = PackageSpec::Npm {
@@ -181,7 +181,7 @@ mod test {
         Ok(())
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_packument() -> miette::Result<()> {
         let mut mock_server = mockito::Server::new();
         let example_response = format!(

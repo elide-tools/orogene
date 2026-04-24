@@ -3,7 +3,7 @@ use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
 
-use async_std::sync::Arc;
+use std::sync::Arc;
 use oro_common::{CorgiPackument, CorgiVersionMetadata, Packument, VersionMetadata};
 use oro_package_spec::PackageSpec;
 use ssri::Integrity;
@@ -270,7 +270,7 @@ impl Package {
         let dir = PathBuf::from(dir);
         let cache = PathBuf::from(cache);
         let name = self.name().to_owned();
-        async_std::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             let created = dashmap::DashSet::new();
             let index = rkyv::access::<rkyv::Archived<TarballIndex>, rkyv::rancor::Error>(
                 entry
@@ -303,7 +303,8 @@ impl Package {
             }
             Ok::<_, NassunError>(())
         })
-        .await?;
+        .await
+        .unwrap()?;
         Ok(())
     }
 }

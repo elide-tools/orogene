@@ -50,23 +50,22 @@ impl IsolatedLinker {
 
         let store = prefix.join(STORE_DIR_NAME);
 
-        if self.opts.actual_tree.is_none() || !async_std::path::Path::new(&store).exists().await {
+        if self.opts.actual_tree.is_none() || !store.exists() {
             // If there's no actual tree previously calculated, we can't trust
             // *anything* inside node_modules, so everything is immediately
             // extraneous and we wipe it all. Sorry.
-            let mut entries = async_std::fs::read_dir(&prefix).await.io_context(|| {
+            let mut entries = tokio::fs::read_dir(&prefix).await.io_context(|| {
                 format!(
                     "Failed to read contents of node_modules at {}.",
                     prefix.display()
                 )
             })?;
-            while let Some(entry) = entries.next().await {
-                let entry = entry.io_context(|| {
-                    format!(
-                        "Failed to read directory entry from prefix at {}.",
-                        prefix.display()
-                    )
-                })?;
+            while let Some(entry) = entries.next_entry().await.io_context(|| {
+                format!(
+                    "Failed to read directory entry from prefix at {}.",
+                    prefix.display()
+                )
+            })? {
                 let path = entry.path();
                 let ty = entry.file_type().await.io_context(|| {
                     format!(
@@ -75,17 +74,17 @@ impl IsolatedLinker {
                     )
                 })?;
                 if ty.is_dir() {
-                    async_std::fs::remove_dir_all(&path).await.io_context(|| format!("Failed to rimraf contents of directory at {} while pruning node_modules.", entry.path().display()))?;
+                    tokio::fs::remove_dir_all(&path).await.io_context(|| format!("Failed to rimraf contents of directory at {} while pruning node_modules.", entry.path().display()))?;
                 } else if ty.is_file() {
-                    async_std::fs::remove_file(&path).await.io_context(|| {
+                    tokio::fs::remove_file(&path).await.io_context(|| {
                         format!(
                             "Failed to delete file at {} while pruning node_modules.",
                             entry.path().display()
                         )
                     })?;
-                } else if ty.is_symlink() && async_std::fs::remove_file(entry.path()).await.is_err()
+                } else if ty.is_symlink() && tokio::fs::remove_file(entry.path()).await.is_err()
                 {
-                    async_std::fs::remove_dir_all(&path).await.io_context(|| {
+                    tokio::fs::remove_dir_all(&path).await.io_context(|| {
                         format!(
                             "Failed to delete {} while pruning node_modules.",
                             entry.path().display()
@@ -129,39 +128,39 @@ impl IsolatedLinker {
                         .join(pkg.name())
                         .join("node_modules")
                 };
-                let pkg_nm_ref = &pkg_nm;
-
                 let mut expected_deps = HashMap::new();
 
                 for edge in graph.inner.edges_directed(idx, Direction::Outgoing) {
                     let dep_pkg = &graph[edge.target()].package;
-                    let dep_store_dir = async_std::path::PathBuf::from(
-                        store_ref
-                            .join(package_dir_name(graph, edge.target()))
-                            .join("node_modules")
-                            .join(dep_pkg.name()),
-                    );
-                    let dep_nm_entry = async_std::path::PathBuf::from(pkg_nm.join(dep_pkg.name()));
+                    let dep_store_dir = store_ref
+                        .join(package_dir_name(graph, edge.target()))
+                        .join("node_modules")
+                        .join(dep_pkg.name());
+                    let dep_nm_entry = pkg_nm.join(dep_pkg.name());
                     expected_deps.insert(dep_nm_entry, dep_store_dir);
                 }
 
-                if async_std::path::Path::new(&pkg_nm).exists().await {
+                if pkg_nm.exists() {
                     let expected_ref = Arc::new(expected_deps);
 
-                    async_std::fs::read_dir(&pkg_nm)
-                        .await
-                        .io_context(|| {
-                            format!(
-                                "Failed to read contents of node_modules at {}.",
-                                pkg_nm.display()
-                            )
-                        })?
-                        .map(|e| Ok((e, expected_ref.clone())))
-                        .try_for_each(move |(entry, expected)| async move {
-                            let entry = entry.io_context(|| {
+                    use tokio_stream::wrappers::ReadDirStream;
+                    ReadDirStream::new(
+                        tokio::fs::read_dir(&pkg_nm)
+                            .await
+                            .io_context(|| {
+                                format!(
+                                    "Failed to read contents of node_modules at {}.",
+                                    pkg_nm.display()
+                                )
+                            })?,
+                    )
+                    .map(|e| Ok((e, expected_ref.clone(), pkg_nm.clone())))
+                    .try_for_each(|(entry_result, expected, pkg_nm_disp)| {
+                        async move {
+                            let entry = entry_result.io_context(|| {
                                 format!(
                                     "Failed to read directory entry from prefix at {}.",
-                                    pkg_nm_ref.display()
+                                    pkg_nm_disp.display()
                                 )
                             })?;
                             let path = entry.path();
@@ -174,22 +173,22 @@ impl IsolatedLinker {
                                     )
                                 })?;
                                 if ty.is_file() {
-                                    async_std::fs::remove_file(&path).await.io_context(|| {
+                                    tokio::fs::remove_file(&path).await.io_context(|| {
                                         format!(
                                             "Failed to delete file at {} while pruning node_modules.",
                                             entry.path().display()
                                         )
                                     })?;
                                 } else if ty.is_dir() {
-                                    async_std::fs::remove_dir_all(&path).await.io_context(|| {
+                                    tokio::fs::remove_dir_all(&path).await.io_context(|| {
                                         format!(
                                             "Failed to rimraf contents of directory at {} while pruning node_modules.",
                                             path.display()
                                         )
                                     })?;
-                                } else if ty.is_symlink() && target != path.read_link().await.io_context(|| format!("Failed to read symlink at {} while pruning node_modules.", path.display()))? {
-                                    if async_std::fs::remove_file(&path).await.is_err() {
-                                        async_std::fs::remove_dir_all(&path).await.io_context(|| {
+                                } else if ty.is_symlink() && target != tokio::fs::read_link(&path).await.io_context(|| format!("Failed to read symlink at {} while pruning node_modules.", path.display()))? {
+                                    if tokio::fs::remove_file(&path).await.is_err() {
+                                        tokio::fs::remove_dir_all(&path).await.io_context(|| {
                                             format!(
                                                 "Failed to delete {} while pruning node_modules.",
                                                 path.display()
@@ -200,21 +199,23 @@ impl IsolatedLinker {
                                     #[cfg(windows)]
                                     let path_clone = path.clone();
                                     #[cfg(windows)]
-                                    if async_std::task::spawn_blocking(move || {
+                                    if tokio::task::spawn_blocking(move || {
                                         Ok::<_, std::io::Error>(
                                             !junction::exists(&path_clone)?
-                                                || async_std::path::PathBuf::from(
+                                                || PathBuf::from(
                                                     &junction::get_target(&path_clone)?,
                                                 ) != target,
                                         )
                                     })
-                                    .await.io_context(|| {
+                                    .await
+                                    .unwrap()
+                                    .io_context(|| {
                                         format!(
                                             "Failed to check if {} is a junction while pruning node_modules.",
                                             path.display()
                                         )
-                                    })? && async_std::fs::remove_file(&path).await.is_err() {
-                                        async_std::fs::remove_dir_all(&path).await.io_context(|| {
+                                    })? && tokio::fs::remove_file(&path).await.is_err() {
+                                        tokio::fs::remove_dir_all(&path).await.io_context(|| {
                                             format!(
                                                 "Failed to delete {} while pruning node_modules.",
                                                 path.display()
@@ -224,8 +225,9 @@ impl IsolatedLinker {
                                 }
                             }
                             Ok::<_, NodeMaintainerError>(())
-                        })
-                        .await?;
+                        }
+                    })
+                    .await?;
                 }
 
                 Ok::<_, NodeMaintainerError>(())
@@ -238,17 +240,21 @@ impl IsolatedLinker {
 
         // Clean out any extraneous things in the store dir itself. We've
         // already verified the store dir at least exists.
-        async_std::fs::read_dir(&store)
-            .await
-            .io_context(|| {
-                format!(
-                    "Failed to read contents of package store at {} while pruning node_modules.",
-                    store.display()
-                )
-            })?
+        {
+            use tokio_stream::wrappers::ReadDirStream;
+            ReadDirStream::new(
+                tokio::fs::read_dir(&store)
+                    .await
+                    .io_context(|| {
+                        format!(
+                            "Failed to read contents of package store at {} while pruning node_modules.",
+                            store.display()
+                        )
+                    })?,
+            )
             .map(|entry| Ok((entry, pruned.clone())))
-            .try_for_each_concurrent(self.opts.concurrency, move |(entry, pruned)| async move {
-                let entry = entry.io_context(|| {
+            .try_for_each_concurrent(self.opts.concurrency, move |(entry_result, pruned)| async move {
+                let entry = entry_result.io_context(|| {
                     format!(
                         "Failed to read directory entry from package store at {} while pruning node_modules.",
                         store_ref.display()
@@ -265,30 +271,29 @@ impl IsolatedLinker {
                             .to_string_lossy()
                             .starts_with('@')
                         {
-                            let mut iter = async_std::fs::read_dir(path).await.io_context(|| {
+                            let mut iter = tokio::fs::read_dir(path).await.io_context(|| {
                                 format!("Failed to read directory {} while pruning scoped package dir in package store.", path.display())
                             })?;
-                            while let Some(next) = iter.next().await {
-                                let next = next.io_context(|| {
-                                    format!("Failed to read dir entry from {} while pruning scoped package dir in package store.", path.display())
-                                })?;
+                            while let Some(next) = iter.next_entry().await.io_context(|| {
+                                format!("Failed to read dir entry from {} while pruning scoped package dir in package store.", path.display())
+                            })? {
                                 if !expected_ref.contains::<std::path::PathBuf>(&next.path().into())
                                 {
                                     let ty = next.file_type().await.io_context(|| {
                                         format!("Failed to get file type for entry at {} while pruning scoped package dir in package store.", next.path().display())
                                     })?;
                                     if ty.is_file() {
-                                        async_std::fs::remove_file(next.path()).await.io_context(|| {
+                                        tokio::fs::remove_file(next.path()).await.io_context(|| {
                                             format!("Failed to delete file at {} while pruning scoped package dir in package store.", next.path().display())
                                         })?;
                                     } else if ty.is_dir() {
-                                        async_std::fs::remove_dir_all(next.path()).await.io_context(|| {
+                                        tokio::fs::remove_dir_all(next.path()).await.io_context(|| {
                                             format!("Failed to rimraf contents of directory at {} while pruning scoped package dir in package store.", next.path().display())
                                         })?;
                                     } else if ty.is_symlink()
-                                        && async_std::fs::remove_file(next.path()).await.is_err()
+                                        && tokio::fs::remove_file(next.path()).await.is_err()
                                     {
-                                        async_std::fs::remove_dir_all(next.path()).await.io_context(|| {
+                                        tokio::fs::remove_dir_all(next.path()).await.io_context(|| {
                                             format!("Failed to delete {} while pruning scoped package dir in package store.", next.path().display())
                                         })?;
                                     }
@@ -296,20 +301,20 @@ impl IsolatedLinker {
                                 }
                             }
                         } else {
-                            async_std::fs::remove_dir_all(entry.path()).await.io_context(|| {
+                            tokio::fs::remove_dir_all(entry.path()).await.io_context(|| {
                                 format!("Failed to rimraf contents of directory at {} while pruning node_modules.", entry.path().display())
                             })?;
                             pruned.fetch_add(1, atomic::Ordering::SeqCst);
                         }
                     } else if ty.is_file() {
-                        async_std::fs::remove_file(entry.path()).await.io_context(|| {
+                        tokio::fs::remove_file(entry.path()).await.io_context(|| {
                             format!("Failed to delete file at {} while pruning node_modules.", entry.path().display())
                         })?;
                         pruned.fetch_add(1, atomic::Ordering::SeqCst);
                     } else if ty.is_symlink()
-                        && async_std::fs::remove_file(entry.path()).await.is_err()
+                        && tokio::fs::remove_file(entry.path()).await.is_err()
                     {
-                        async_std::fs::remove_dir_all(entry.path()).await.io_context(|| {
+                        tokio::fs::remove_dir_all(entry.path()).await.io_context(|| {
                             format!("Failed to delete {} while pruning node_modules.", entry.path().display())
                         })?;
                         pruned.fetch_add(1, atomic::Ordering::SeqCst);
@@ -318,6 +323,7 @@ impl IsolatedLinker {
                 Ok::<_, NodeMaintainerError>(())
             })
             .await?;
+        }
 
         let pruned = pruned.load(atomic::Ordering::SeqCst);
         if pruned == 0 {
@@ -411,7 +417,7 @@ impl IsolatedLinker {
                             .await?;
                         actually_extracted.fetch_add(1, atomic::Ordering::SeqCst);
                         let target_dir = target_dir.clone();
-                        let build_mani = async_std::task::spawn_blocking(move || {
+                        let build_mani = tokio::task::spawn_blocking(move || {
                             BuildManifest::from_path(target_dir.join("package.json")).map_err(|e| {
                                 NodeMaintainerError::BuildManifestReadError(
                                     target_dir.join("package.json"),
@@ -419,7 +425,8 @@ impl IsolatedLinker {
                                 )
                             })
                         })
-                        .await?;
+                        .await
+                        .unwrap()?;
                         if build_mani.scripts.contains_key("preinstall")
                             || build_mani.scripts.contains_key("install")
                             || build_mani.scripts.contains_key("postinstall")
@@ -527,7 +534,7 @@ impl IsolatedLinker {
             )
             .expect("this should never fail");
             let mkdir_cache = self.mkdir_cache.clone();
-            async_std::task::spawn_blocking(move || {
+            tokio::task::spawn_blocking(move || {
                 let path = dep_nm_entry.parent().expect("definitely has a parent");
                 super::mkdirp(path, &mkdir_cache)?;
                 if dep_nm_entry.symlink_metadata().is_err() {
@@ -553,7 +560,8 @@ impl IsolatedLinker {
                 }
                 Ok::<(), NodeMaintainerError>(())
             })
-            .await?;
+            .await
+            .unwrap()?;
         }
         Ok(())
     }
@@ -592,7 +600,7 @@ impl IsolatedLinker {
                 let from = dep_store_dir.join("node_modules").join(name).join(path);
                 let name = name.clone();
                 let mkdir_cache = self.mkdir_cache.clone();
-                async_std::task::spawn_blocking(move || {
+                tokio::task::spawn_blocking(move || {
                     // We only create a symlink if the target bin exists.
                     if from.symlink_metadata().is_ok() {
                         let parent = to.parent().expect("has a parent");
@@ -624,7 +632,8 @@ impl IsolatedLinker {
                     }
                     Ok::<_, NodeMaintainerError>(())
                 })
-                .await?;
+                .await
+                .unwrap()?;
                 linked += 1;
             }
         }

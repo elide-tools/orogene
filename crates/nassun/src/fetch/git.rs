@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use async_process::{Command, Stdio};
-use async_std::sync::Arc;
+use std::sync::Arc;
 use async_trait::async_trait;
 use node_semver::{Range, Version};
 use once_cell::sync::OnceCell;
@@ -380,7 +380,7 @@ mod test {
         Ok(git_dir)
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_name() -> miette::Result<()> {
         let git_dir = setup_git_dir()?;
         let fetcher = GitFetcher::new(OroClient::default());
@@ -397,7 +397,7 @@ mod test {
         Ok(())
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_packument() -> miette::Result<()> {
         let git_dir = setup_git_dir()?;
         let fetcher = GitFetcher::new(OroClient::default());

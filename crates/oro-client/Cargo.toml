@@ -36,7 +36,7 @@ url = { workspace = true }
 http-cache-reqwest = { workspace = true }
 
 [dev-dependencies]
-async-std = { workspace = true, features = ["attributes", "tokio1"] }
+tokio = { workspace = true }
 maplit = { workspace = true }
 pretty_assertions = { workspace = true }
 wiremock = { workspace = true }

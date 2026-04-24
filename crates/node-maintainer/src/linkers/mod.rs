@@ -280,12 +280,13 @@ impl Linker {
                 on_script_start(&graph[idx].package, &event);
             }
             std::mem::drop(_span_enter);
-            let mut script = match async_std::task::spawn_blocking(move || {
+            let mut script = match tokio::task::spawn_blocking(move || {
                 OroScript::new(package_dir, event_clone)?
                     .workspace_path(root)
                     .spawn()
             })
             .await
+            .unwrap()
             {
                 Ok(script) => script,
                 Err(e) if is_optional => {
@@ -307,44 +308,56 @@ impl Linker {
             let stdout_resolved = graph[idx].package.resolved().clone();
             let stderr_resolved = stdout_resolved.clone();
             let join = futures::try_join!(
-                async_std::task::spawn_blocking(move || {
-                    let _enter = stdout_span.enter();
-                    if let Some(stdout) = stdout {
-                        for line in BufReader::new(stdout).lines() {
-                            let line = line.io_context(|| {
-                                format!(
-                                    "Failed to read line from stdout while executing script for {stdout_resolved}",
-                                )
-                            })?;
-                            tracing::debug!("stdout::{stdout_name}::{event}: {line}");
-                            if let Some(on_script_line) = &stdout_on_line {
-                                on_script_line(&line);
+                async {
+                    tokio::task::spawn_blocking(move || {
+                        let _enter = stdout_span.enter();
+                        if let Some(stdout) = stdout {
+                            for line in BufReader::new(stdout).lines() {
+                                let line = line.io_context(|| {
+                                    format!(
+                                        "Failed to read line from stdout while executing script for {stdout_resolved}",
+                                    )
+                                })?;
+                                tracing::debug!("stdout::{stdout_name}::{event}: {line}");
+                                if let Some(on_script_line) = &stdout_on_line {
+                                    on_script_line(&line);
+                                }
                             }
                         }
-                    }
-                    Ok::<_, NodeMaintainerError>(())
-                }),
-                async_std::task::spawn_blocking(move || {
-                    let _enter = stderr_span.enter();
-                    if let Some(stderr) = stderr {
-                        for line in BufReader::new(stderr).lines() {
-                            let line = line.io_context(|| {
-                                format!(
-                                    "Failed to read line from stdout while executing script for {stderr_resolved}",
-                                )
-                            })?;
-                            tracing::debug!("stderr::{stderr_name}::{event_clone}: {line}");
-                            if let Some(on_script_line) = &stderr_on_line {
-                                on_script_line(&line);
+                        Ok::<_, NodeMaintainerError>(())
+                    })
+                    .await
+                    .unwrap()
+                },
+                async {
+                    tokio::task::spawn_blocking(move || {
+                        let _enter = stderr_span.enter();
+                        if let Some(stderr) = stderr {
+                            for line in BufReader::new(stderr).lines() {
+                                let line = line.io_context(|| {
+                                    format!(
+                                        "Failed to read line from stdout while executing script for {stderr_resolved}",
+                                    )
+                                })?;
+                                tracing::debug!("stderr::{stderr_name}::{event_clone}: {line}");
+                                if let Some(on_script_line) = &stderr_on_line {
+                                    on_script_line(&line);
+                                }
                             }
                         }
-                    }
-                    Ok::<_, NodeMaintainerError>(())
-                }),
-                async_std::task::spawn_blocking(move || {
-                    script.wait()?;
-                    Ok::<_, NodeMaintainerError>(())
-                }),
+                        Ok::<_, NodeMaintainerError>(())
+                    })
+                    .await
+                    .unwrap()
+                },
+                async {
+                    tokio::task::spawn_blocking(move || {
+                        script.wait()?;
+                        Ok::<_, NodeMaintainerError>(())
+                    })
+                    .await
+                    .unwrap()
+                },
             );
             match join {
                 Ok(_) => {}

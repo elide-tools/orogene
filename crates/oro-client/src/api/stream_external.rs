@@ -42,7 +42,7 @@ mod test {
 
     use super::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn stream_external() -> Result<()> {
         let mock_server = MockServer::start().await;
         let client: OroClient = Default::default();

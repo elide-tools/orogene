@@ -28,7 +28,7 @@ pub async fn login(
                 match client.fetch_done_url(&login_web.done_url).await? {
                     DoneURLResponse::Token(token) => break Ok(Token { token }),
                     DoneURLResponse::Duration(duration) => {
-                        async_std::task::sleep(duration).await;
+                        tokio::time::sleep(duration).await;
                     }
                 }
             }
@@ -62,7 +62,7 @@ pub async fn login(
                         match client.fetch_done_url(&done_url).await? {
                             DoneURLResponse::Token(token) => break Ok(Token { token }),
                             DoneURLResponse::Duration(duration) => {
-                                async_std::task::sleep(duration).await;
+                                tokio::time::sleep(duration).await;
                             }
                         }
                     }

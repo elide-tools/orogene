@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use async_std::sync::Arc;
+use std::sync::Arc;
 use async_trait::async_trait;
 use futures::io::AsyncRead;
 use node_semver::Version;
@@ -29,7 +29,7 @@ impl DirFetcher {
 impl DirFetcher {
     pub(crate) async fn corgi_manifest(&self, path: &Path) -> Result<Manifest> {
         let pkg_path = path.join("package.json");
-        let json = async_std::fs::read(&pkg_path)
+        let json = tokio::fs::read(&pkg_path)
             .await
             .map_err(|err| NassunError::DirReadError(err, pkg_path))?;
         let pkgjson: CorgiManifest =
@@ -38,7 +38,7 @@ impl DirFetcher {
     }
     pub(crate) async fn manifest(&self, path: &Path) -> Result<Manifest> {
         let pkg_path = path.join("package.json");
-        let json = async_std::fs::read(&pkg_path)
+        let json = tokio::fs::read(&pkg_path)
             .await
             .map_err(|err| NassunError::DirReadError(err, pkg_path))?;
         let pkgjson: OroManifest =
@@ -278,7 +278,7 @@ mod test {
         Ok((dir_fetcher, package_spec, tmp, package_path, cache_path))
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_name() -> Result<()> {
         let (fetcher, package_spec, _tmp, _package_path, cache_path) = setup_dirs()?;
         let name = fetcher.name(&package_spec, &cache_path).await?;
@@ -286,7 +286,7 @@ mod test {
         Ok(())
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_packument() -> miette::Result<()> {
         let (fetcher, package_spec, _tmp, _package_path, cache_path) = setup_dirs()?;
         let packument = fetcher.packument(&package_spec, &cache_path).await?;

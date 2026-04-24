@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
-use async_std::sync::Mutex;
+use tokio::sync::Mutex;
 #[cfg(not(target_arch = "wasm32"))]
 use colored::Colorize;
 use futures::{StreamExt, TryFutureExt};
@@ -76,7 +76,7 @@ impl<'a> Resolver<'a> {
 
         let mut package_stream = package_stream
             .map(|dep: NodeDependency| {
-                let maybe_spec = if let Some(mut fetches) = fetches.try_lock() {
+                let maybe_spec = if let Ok(mut fetches) = fetches.try_lock() {
                     if let Some(list) = fetches.get_mut(&dep.spec) {
                         // Package fetch is already in-flight, add dependency
                         // to the existing list.
@@ -442,14 +442,14 @@ impl<'a> Resolver<'a> {
     #[cfg(not(target_arch = "wasm32"))]
     async fn load_actual(&mut self) -> Result<(), NodeMaintainerError> {
         let meta = self.root.join("node_modules").join(META_FILE_NAME);
-        self.actual_tree = async_std::fs::read_to_string(&meta)
+        self.actual_tree = tokio::fs::read_to_string(&meta)
             .await
             .ok()
             .and_then(|lock| Lockfile::from_kdl(lock).ok());
         if self.actual_tree.is_none() && meta.exists() {
             // If anything went wrong, we go ahead and delete the meta file,
             // if it exists, because it's probably corrupted.
-            async_std::fs::remove_file(&meta).await.io_context(|| {
+            tokio::fs::remove_file(&meta).await.io_context(|| {
                 format!(
                     "Failed to remove Orogene meta file from node_modules, at {}",
                     meta.display()

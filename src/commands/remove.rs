@@ -26,7 +26,7 @@ pub struct RemoveCmd {
 impl OroCommand for RemoveCmd {
     async fn execute(mut self) -> Result<()> {
         let mut manifest = oro_pretty_json::from_str(
-            &async_std::fs::read_to_string(self.apply.root.join("package.json"))
+            &tokio::fs::read_to_string(self.apply.root.join("package.json"))
                 .await
                 .into_diagnostic()?,
         )
@@ -60,7 +60,7 @@ impl OroCommand for RemoveCmd {
         // Then, we apply the change.
         self.apply.execute(corgi).await?;
 
-        async_std::fs::write(
+        tokio::fs::write(
             self.apply.root.join("package.json"),
             oro_pretty_json::to_string_pretty(&manifest).into_diagnostic()?,
         )

@@ -12,7 +12,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 
 use async_compression::futures::bufread::GzipDecoder;
-use async_std::io::BufReader;
+use futures::io::BufReader;
 use async_tar_wasm::Archive;
 #[cfg(not(target_arch = "wasm32"))]
 use backon::{BlockingRetryable, ConstantBuilder};
@@ -81,10 +81,11 @@ impl Tarball {
         let temp = self.into_temp().await?;
         let dir = PathBuf::from(dir);
         let cache = cache.map(PathBuf::from);
-        async_std::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             temp.extract_to_dir(&dir, integrity, cache.as_deref(), extract_mode)
         })
         .await
+        .unwrap()
     }
 
     #[cfg(not(target_arch = "wasm32"))]

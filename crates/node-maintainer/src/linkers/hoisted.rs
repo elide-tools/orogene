@@ -48,26 +48,23 @@ impl HoistedLinker {
         }
 
         if self.opts.actual_tree.is_none()
-            || async_std::path::Path::new(&prefix.join(STORE_DIR_NAME))
-                .exists()
-                .await
+            || prefix.join(STORE_DIR_NAME).exists()
         {
             // If there's no actual tree previously calculated, we can't trust
             // *anything* inside node_modules, so everything is immediately
             // extraneous and we wipe it all. Sorry.
-            let mut entries = async_std::fs::read_dir(&prefix).await.io_context(|| {
+            let mut entries = tokio::fs::read_dir(&prefix).await.io_context(|| {
                 format!(
                     "Failed to read contents of node_modules at {}",
                     prefix.display()
                 )
             })?;
-            while let Some(entry) = entries.next().await {
-                let entry = entry.io_context(|| {
-                    format!(
-                        "Failed to read directory entry from prefix at {}",
-                        prefix.display()
-                    )
-                })?;
+            while let Some(entry) = entries.next_entry().await.io_context(|| {
+                format!(
+                    "Failed to read directory entry from prefix at {}",
+                    prefix.display()
+                )
+            })? {
                 let ty = entry.file_type().await.io_context(|| {
                     format!(
                         "Failed to get file type from entry at {}.",
@@ -75,9 +72,9 @@ impl HoistedLinker {
                     )
                 })?;
                 if ty.is_dir() {
-                    async_std::fs::remove_dir_all(entry.path()).await.io_context(|| format!("Failed to rimraf contents of directory at {} while pruning node_modules.", entry.path().display()))?;
+                    tokio::fs::remove_dir_all(entry.path()).await.io_context(|| format!("Failed to rimraf contents of directory at {} while pruning node_modules.", entry.path().display()))?;
                 } else if ty.is_file() {
-                    async_std::fs::remove_file(entry.path())
+                    tokio::fs::remove_file(entry.path())
                         .await
                         .io_context(|| {
                             format!(
@@ -85,9 +82,9 @@ impl HoistedLinker {
                                 entry.path().display()
                             )
                         })?;
-                } else if ty.is_symlink() && async_std::fs::remove_file(entry.path()).await.is_err()
+                } else if ty.is_symlink() && tokio::fs::remove_file(entry.path()).await.is_err()
                 {
-                    async_std::fs::remove_dir_all(entry.path())
+                    tokio::fs::remove_dir_all(entry.path())
                         .await
                         .io_context(|| {
                             format!(
@@ -200,7 +197,7 @@ impl HoistedLinker {
                     pb(entry_path);
                 }
                 tracing::trace!("Pruning extraneous directory: {}", entry.path().display());
-                async_std::fs::remove_dir_all(entry.path())
+                tokio::fs::remove_dir_all(entry.path())
                     .await
                     .io_context(|| {
                         format!(
@@ -213,7 +210,7 @@ impl HoistedLinker {
                     pb(entry_path);
                 }
                 tracing::trace!("Pruning extraneous file: {}", entry.path().display());
-                async_std::fs::remove_file(entry.path())
+                tokio::fs::remove_file(entry.path())
                     .await
                     .io_context(|| {
                         format!(
@@ -306,7 +303,7 @@ impl HoistedLinker {
                             .await?;
                         actually_extracted.fetch_add(1, atomic::Ordering::SeqCst);
                         let target_dir = target_dir.clone();
-                        let build_mani = async_std::task::spawn_blocking(move || {
+                        let build_mani = tokio::task::spawn_blocking(move || {
                             BuildManifest::from_path(target_dir.join("package.json")).map_err(|e| {
                                 NodeMaintainerError::BuildManifestReadError(
                                     target_dir.join("package.json"),
@@ -314,7 +311,8 @@ impl HoistedLinker {
                                 )
                             })
                         })
-                        .await?;
+                        .await
+                        .unwrap()?;
                         if build_mani.scripts.contains_key("preinstall")
                             || build_mani.scripts.contains_key("install")
                             || build_mani.scripts.contains_key("postinstall")
@@ -370,7 +368,7 @@ impl HoistedLinker {
         {
             let entry = entry?;
             if entry.path().file_name() == bin_file_name {
-                async_std::fs::remove_dir_all(entry.path()).await.io_context(|| format!("Failed to remove directory at {} while clearing out existing node_modules/.bin directories.", entry.path().display()))?;
+                tokio::fs::remove_dir_all(entry.path()).await.io_context(|| format!("Failed to remove directory at {} while clearing out existing node_modules/.bin directories.", entry.path().display()))?;
             }
         }
         futures::stream::iter(self.pending_rebuild.lock().await.iter().copied())
@@ -409,7 +407,7 @@ impl HoistedLinker {
                     let from = package_dir.join(path);
                     let name = name.clone();
                     let mkdir_cache = self.mkdir_cache.clone();
-                    async_std::task::spawn_blocking(move || {
+                    tokio::task::spawn_blocking(move || {
                         // We only create a symlink if the target bin exists.
                         let target_dir = &target_dir;
                         if from.symlink_metadata().is_ok() {
@@ -444,7 +442,8 @@ impl HoistedLinker {
                         }
                         Ok::<_, NodeMaintainerError>(())
                     })
-                    .await?;
+                    .await
+                    .unwrap()?;
                     linked.fetch_add(1, atomic::Ordering::SeqCst);
                 }
                 Ok::<_, NodeMaintainerError>(())

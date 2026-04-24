@@ -133,16 +133,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-attributes"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
-dependencies = [
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "async-channel"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -195,7 +185,6 @@ dependencies = [
  "blocking",
  "futures-lite",
  "once_cell",
- "tokio",
 ]
 
 [[package]]
@@ -251,7 +240,6 @@ version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62565bb4402e926b29953c785397c6dc0391b7b446e45008b0049eb43cec6f5d"
 dependencies = [
- "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -2233,7 +2221,6 @@ version = "0.3.34"
 dependencies = [
  "async-compression",
  "async-process",
- "async-std",
  "async-tar-wasm",
  "async-trait",
  "backon",
@@ -2261,6 +2248,7 @@ dependencies = [
  "tempfile",
  "test-case",
  "thiserror 2.0.18",
+ "tokio",
  "tracing",
  "tsify",
  "url",
@@ -2274,7 +2262,6 @@ dependencies = [
 name = "node-maintainer"
 version = "0.3.34"
 dependencies = [
- "async-std",
  "colored",
  "console_error_panic_hook",
  "dashmap",
@@ -2303,6 +2290,8 @@ dependencies = [
  "ssri",
  "tempfile",
  "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
  "tracing",
  "tsify",
  "unicase",
@@ -2480,7 +2469,6 @@ name = "oro-client"
 version = "0.3.34"
 dependencies = [
  "anyhow",
- "async-std",
  "async-trait",
  "base64 0.22.1",
  "chrono",
@@ -2499,6 +2487,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
+ "tokio",
  "tracing",
  "url",
  "wiremock",
@@ -2540,7 +2529,6 @@ dependencies = [
 name = "oro-npm-account"
 version = "0.3.34"
 dependencies = [
- "async-std",
  "base64 0.22.1",
  "dialoguer",
  "kdl",
@@ -2549,6 +2537,7 @@ dependencies = [
  "oro-client",
  "reqwest",
  "thiserror 2.0.18",
+ "tokio",
  "tracing",
  "url",
 ]
@@ -2603,7 +2592,6 @@ dependencies = [
 name = "orogene"
 version = "0.3.34"
 dependencies = [
- "async-std",
  "async-trait",
  "backon",
  "chrono",
@@ -2639,6 +2627,7 @@ dependencies = [
  "term_grid",
  "term_size",
  "thiserror 2.0.18",
+ "tokio",
  "tracing",
  "tracing-appender",
  "tracing-indicatif",
@@ -3990,7 +3979,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
- "quote",
  "unicode-ident",
 ]
 

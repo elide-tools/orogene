@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[cfg(not(target_arch = "wasm32"))]
-use async_std::fs;
+use tokio::fs;
 use nassun::client::{Nassun, NassunOpts};
 use nassun::package::Package;
 use oro_common::CorgiManifest;
@@ -293,7 +293,7 @@ impl NodeMaintainerOptions {
         if let Some(root) = &self.root {
             let kdl_lock = root.join("package-lock.kdl");
             if kdl_lock.exists() {
-                match async_std::fs::read_to_string(&kdl_lock)
+                match tokio::fs::read_to_string(&kdl_lock)
                     .await
                     .io_context(|| format!("Failed to read {}", kdl_lock.display()))
                     .and_then(Lockfile::from_kdl)
@@ -304,7 +304,7 @@ impl NodeMaintainerOptions {
             }
             let npm_lock = root.join("package-lock.json");
             if npm_lock.exists() {
-                match async_std::fs::read_to_string(&npm_lock)
+                match tokio::fs::read_to_string(&npm_lock)
                     .await
                     .io_context(|| format!("Failed to read {}", npm_lock.display()))
                     .and_then(Lockfile::from_npm)
@@ -315,7 +315,7 @@ impl NodeMaintainerOptions {
             }
             let npm_lock = root.join("npm-shrinkwrap.json");
             if npm_lock.exists() {
-                match async_std::fs::read_to_string(&npm_lock)
+                match tokio::fs::read_to_string(&npm_lock)
                     .await
                     .io_context(|| format!("Failed to read {}", npm_lock.display()))
                     .and_then(Lockfile::from_npm)

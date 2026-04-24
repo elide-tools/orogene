@@ -56,12 +56,8 @@ oro-package-spec = { version = "=0.3.34", path = "./crates/oro-package-spec" }
 oro-pretty-json = { version = "=0.3.34", path = "./crates/oro-pretty-json" }
 
 # Regular deps
-async-std = { workspace = true, features = [
-    "attributes",
-    "tokio1",
-    "unstable",
-] }
 async-trait = { workspace = true }
+tokio = { workspace = true }
 chrono = { workspace = true }
 chrono-humanize = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
@@ -102,7 +98,6 @@ rust-version = "1.67.1"
 anyhow = "1.0.75"
 async-compression = "0.4"
 async-process = "1.0.1"
-async-std = "1.12.0"
 async-trait = "0.1.64"
 backon = "0.4.0"
 base64 = "0.22"
@@ -164,6 +159,8 @@ ssri = "9.0.0"
 supports-unicode = "2.0.0"
 tar = "0.4.38"
 tempfile = "3.3.0"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt-multi-thread", "sync", "time"] }
+tokio-stream = { version = "0.1", features = ["fs"] }
 term_grid = "0.1.7"
 term_size = "0.3.2"
 test-case = "3.0.0"

@@ -20,8 +20,8 @@ interactive = ["dep:dialoguer"]
 [dependencies]
 oro-client = { version = "=0.3.34", path = "../oro-client" }
 
-async-std = { workspace = true }
 base64 = { workspace = true }
+tokio = { workspace = true }
 dialoguer = { workspace = true, features = ["password"], optional = true }
 kdl = { workspace = true }
 miette = { workspace = true }

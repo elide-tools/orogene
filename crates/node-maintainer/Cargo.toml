@@ -16,8 +16,9 @@ nassun = { version = "=0.3.34", path = "../nassun" }
 oro-common = { version = "=0.3.34", path = "../oro-common" }
 oro-package-spec = { version = "=0.3.34", path = "../oro-package-spec" }
 
-async-std = { workspace = true }
 colored = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
 dashmap = { workspace = true }
 futures = { workspace = true }
 indexmap = { workspace = true }
@@ -56,7 +57,7 @@ wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 
 [dev-dependencies]
-async-std = { workspace = true, features = ["attributes", "tokio1"] }
+tokio = { workspace = true }
 insta = { workspace = true }
 maplit = { workspace = true }
 miette = { workspace = true, features = ["fancy"] }

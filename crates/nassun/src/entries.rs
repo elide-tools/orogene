@@ -1,7 +1,8 @@
 use std::{borrow::Cow, pin::Pin, task::Poll};
 
 use async_compression::futures::bufread::GzipDecoder;
-use async_std::{io::BufReader, path::Path};
+use futures::io::BufReader;
+use std::path::Path;
 use async_tar_wasm::{Archive, Entry as TarEntry};
 use futures::{AsyncRead, Stream};
 
@@ -64,6 +65,12 @@ impl Entry {
         self.0
             .path()
             .io_context(|| "Failed to read path from tarball entry".into())
+            .map(|cow| match cow {
+                // async_std::path::Path is a transparent newtype over std::path::Path;
+                // convert via OsStr to avoid a direct dep on async_std.
+                Cow::Borrowed(p) => Cow::Borrowed(std::path::Path::new(p.as_os_str())),
+                Cow::Owned(p) => Cow::Owned(std::path::PathBuf::from(p.as_os_str())),
+            })
     }
 
     /// Writes this file to the specified location.

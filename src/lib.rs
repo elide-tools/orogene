@@ -359,7 +359,7 @@ impl Orogene {
                 .with_target("tokio_util", LevelFilter::WARN)
                 .with_target("async_io", LevelFilter::WARN)
                 .with_target("want", LevelFilter::WARN)
-                .with_target("async_std", LevelFilter::WARN)
+                .with_target("tokio", LevelFilter::WARN)
                 .with_target("mio", LevelFilter::WARN)
                 .with_target("polling", LevelFilter::WARN)
                 .with_default(LevelFilter::TRACE);

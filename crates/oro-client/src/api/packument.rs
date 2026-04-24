@@ -81,7 +81,7 @@ mod test {
 
     use super::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn packument_fetch() -> Result<()> {
         let mock_server = MockServer::start().await;
         let client = OroClient::new(mock_server.uri().parse().into_diagnostic()?);
@@ -163,7 +163,7 @@ mod test {
         Ok(())
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fetch_with_credentials() -> Result<()> {
         let mock_server = MockServer::start().await;
         let url: Url = mock_server.uri().parse().into_diagnostic()?;
