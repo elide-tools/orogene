@@ -170,7 +170,7 @@ impl OroClientBuilder {
         if let Some(cache_loc) = self.cache {
             client_builder = client_builder.with(Cache(HttpCache {
                 mode: CacheMode::Default,
-                manager: CACacheManager { path: cache_loc },
+                manager: CACacheManager::new(cache_loc, false),
                 options: HttpCacheOptions::default(),
             }));
         }
