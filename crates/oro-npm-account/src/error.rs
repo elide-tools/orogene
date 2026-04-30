@@ -16,7 +16,7 @@ pub enum OroNpmAccountError {
     /// Failed to read user input.
     #[error(transparent)]
     #[diagnostic(code(oro_npm_account::read_user_input_error), url(docsrs))]
-    ReadUserInputError(std::io::Error),
+    ReadUserInputError(dialoguer::Error),
 
     /// Invalid header value
     #[error(transparent)]

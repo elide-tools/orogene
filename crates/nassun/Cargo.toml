@@ -19,7 +19,6 @@ oro-package-spec = { version = "=0.3.34", path = "../oro-package-spec" }
 async-compression = { workspace = true, features = ["gzip", "futures-io", "tokio"] }
 async-trait = { workspace = true }
 tokio = { workspace = true }
-bincode = { workspace = true }
 dashmap = { workspace = true }
 futures = { workspace = true }
 miette = { workspace = true }
