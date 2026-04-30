@@ -275,7 +275,7 @@ impl PackageFetcher for GitFetcher {
 
 #[cfg(test)]
 mod test {
-    use std::{fs::File, io::Write, process};
+    use std::{fs::File, io::Write, process, sync::Once};
 
     use oro_client::OroClient;
     use oro_package_spec::{GitInfo, PackageSpec};
@@ -284,6 +284,13 @@ mod test {
     use crate::fetch::PackageFetcher;
 
     use super::GitFetcher;
+
+    fn init_crypto() {
+        static INIT: Once = Once::new();
+        INIT.call_once(|| {
+            let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+        });
+    }
 
     fn setup_git_dir() -> miette::Result<tempfile::TempDir> {
         let git_dir = tempdir().unwrap();
@@ -383,6 +390,7 @@ mod test {
 
     #[tokio::test]
     async fn read_name() -> miette::Result<()> {
+        init_crypto();
         let git_dir = setup_git_dir()?;
         let fetcher = GitFetcher::new(OroClient::default());
         let spec = PackageSpec::Git(GitInfo::Url {
@@ -400,6 +408,7 @@ mod test {
 
     #[tokio::test]
     async fn read_packument() -> miette::Result<()> {
+        init_crypto();
         let git_dir = setup_git_dir()?;
         let fetcher = GitFetcher::new(OroClient::default());
         let tmp = tempdir().unwrap();

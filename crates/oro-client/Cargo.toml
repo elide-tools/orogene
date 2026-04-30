@@ -39,4 +39,5 @@ http-cache-reqwest = { workspace = true }
 tokio = { workspace = true }
 maplit = { workspace = true }
 pretty_assertions = { workspace = true }
+rustls = { workspace = true }
 wiremock = { workspace = true }

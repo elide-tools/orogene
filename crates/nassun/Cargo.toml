@@ -33,6 +33,7 @@ url = { workspace = true }
 
 [dev-dependencies]
 mockito = { workspace = true }
+rustls = { workspace = true }
 test-case = { workspace = true }
 tokio = { workspace = true }
 

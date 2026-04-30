@@ -44,6 +44,7 @@ mod test {
 
     #[tokio::test]
     async fn stream_external() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let client: OroClient = Default::default();
         let server_url: Url = mock_server.uri().parse().into_diagnostic()?;

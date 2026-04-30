@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Once;
 
 use kdl::KdlDocument;
 use miette::{IntoDiagnostic, Result};
@@ -10,8 +11,16 @@ use wiremock::{
     Mock, MockServer, ResponseTemplate,
 };
 
-#[async_std::test]
+fn init_crypto() {
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+    });
+}
+
+#[tokio::test]
 async fn basic_flatten() -> Result<()> {
+    init_crypto();
     let mock_server = MockServer::start().await;
     // This tests a basic linear dependency chain with no conflicts flattens
     // completely: a -> b -> c -> d
@@ -81,8 +90,9 @@ pkg "d" {
     Ok(())
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn nesting_simple_conflict() -> Result<()> {
+    init_crypto();
     let mock_server = MockServer::start().await;
     // Testing that simple conflicts get resolved correctly.
     let mock_data = r#"
@@ -163,8 +173,9 @@ pkg "d" "c" {
     Ok(())
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn nesting_sibling_conflict() -> Result<()> {
+    init_crypto();
     let mock_server = MockServer::start().await;
     // This tests that when a dependency conflict comes from different
     // branches of a tree, the "phantom" hoisted dependency is correctly

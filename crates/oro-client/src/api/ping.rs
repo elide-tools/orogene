@@ -26,6 +26,7 @@ mod test {
 
     #[tokio::test]
     async fn ping() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let client = OroClient::new(mock_server.uri().parse().into_diagnostic()?);
 

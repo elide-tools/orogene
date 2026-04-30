@@ -162,13 +162,23 @@ impl PackageFetcher for NpmFetcher {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Once;
+
     use oro_package_spec::VersionSpec;
     use tempfile::tempdir;
 
     use super::*;
 
+    fn init_crypto() {
+        static INIT: Once = Once::new();
+        INIT.call_once(|| {
+            let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+        });
+    }
+
     #[tokio::test]
     async fn read_name() -> miette::Result<()> {
+        init_crypto();
         let fetcher = NpmFetcher::new(oro_client::OroClient::default(), HashMap::default(), false);
         let spec = PackageSpec::Npm {
             scope: None,
@@ -183,7 +193,8 @@ mod test {
 
     #[tokio::test]
     async fn read_packument() -> miette::Result<()> {
-        let mut mock_server = mockito::Server::new();
+        init_crypto();
+        let mut mock_server = mockito::Server::new_async().await;
         let example_response = format!(
             r#"{{
             "_attachments": {{}},

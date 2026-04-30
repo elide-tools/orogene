@@ -157,6 +157,10 @@ rand = { version = "0.9", default-features = false, features = ["thread_rng"] }
 reflink-copy = "0.1.8"
 regex = "1.7.2"
 reqwest = { version = "0.13", default-features = false, features = ["json", "gzip", "brotli", "stream", "zstd", "http2", "rustls-no-provider"] }
+# Test-only: install a default crypto provider so reqwest's rustls-no-provider
+# config has one. Library/binary code must NOT depend on this — embedders pick
+# their own provider.
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs"] }
 reqwest-middleware = "0.5"
 resvg = "0.29.0"
 rkyv = "0.8"
@@ -191,8 +195,8 @@ which = "8"
 wiremock = "0.5.17"
 reqwest-retry = "0.9"
 
-# [patch.crates-io]
-# cacache = { path = "../cacache-rs" }
+[patch.crates-io]
+ssri = { git = "https://github.com/elide-tools/ssri-rs", branch = "latest" }
 # reflink-copy = { path = "../reflink-copy" }
 
 # Config for 'cargo dist'

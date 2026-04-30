@@ -83,6 +83,7 @@ mod test {
 
     #[tokio::test]
     async fn packument_fetch() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let client = OroClient::new(mock_server.uri().parse().into_diagnostic()?);
 
@@ -165,6 +166,7 @@ mod test {
 
     #[tokio::test]
     async fn fetch_with_credentials() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let url: Url = mock_server.uri().parse().into_diagnostic()?;
         let client = OroClient::builder()

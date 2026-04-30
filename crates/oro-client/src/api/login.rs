@@ -248,6 +248,7 @@ mod test {
 
     #[tokio::test]
     async fn login_web() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let client = OroClient::new(mock_server.uri().parse().into_diagnostic()?);
 
@@ -274,6 +275,7 @@ mod test {
 
     #[tokio::test]
     async fn login_couch() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let client = OroClient::new(mock_server.uri().parse().into_diagnostic()?);
 
@@ -428,6 +430,7 @@ mod test {
 
     #[tokio::test]
     async fn fetch_done_url() -> Result<()> {
+        crate::test_util::init_crypto();
         let mock_server = MockServer::start().await;
         let client = OroClient::new(mock_server.uri().parse().into_diagnostic()?);
         let done_url = client.registry.join("-/v1/done").unwrap();

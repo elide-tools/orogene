@@ -62,6 +62,7 @@ insta = { workspace = true }
 maplit = { workspace = true }
 miette = { workspace = true, features = ["fancy"] }
 pretty_assertions = { workspace = true }
+rustls = { workspace = true }
 wiremock = { workspace = true }
 
 [lib]
